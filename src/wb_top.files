@@ -1,0 +1,13 @@
+top/ycr1_dmem_router.sv
+top/ycr1_dp_memory.sv
+top/ycr1_tcm.sv
+top/ycr1_timer.sv
+top/ycr1_dmem_wb.sv
+top/ycr1_imem_wb.sv
+top/ycr1_top_wb.sv
+top/ycr1_intf.sv
+top/ycr1_imem_router.sv
+lib/sync_fifo.sv
+lib/async_fifo.sv
+lib/clk_skew_adjust.gv
+lib/ctech_cells.sv
