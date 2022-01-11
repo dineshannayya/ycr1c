@@ -726,6 +726,7 @@ assign pc_curr_next = exu2ifu_pc_new_req_o        ? exu2ifu_pc_new_o
 
 // New PC multiplexer
 //------------------------------------------------------------------------------
+wire fencei_req = exu_queue.fencei_req;
 
 always_comb begin
     case (1'b1)
@@ -737,7 +738,7 @@ always_comb begin
         dbg_run_start_npbuf : exu2ifu_pc_new_o = hdu2exu_dbg_new_pc_i;
 `endif // YCR1_DBG_EN
         wfi_run_start_ff    : exu2ifu_pc_new_o = pc_curr_ff;
-        exu_queue.fencei_req: exu2ifu_pc_new_o = inc_pc;
+        fencei_req:           exu2ifu_pc_new_o = inc_pc;
         default             : exu2ifu_pc_new_o = ialu_addr_res & YCR1_JUMP_MASK;
     endcase
 end
@@ -746,7 +747,7 @@ assign exu2ifu_pc_new_req_o = init_pc                                        // 
                             | exu2csr_take_irq_o
                             | exu2csr_take_exc_o
                             | (exu2csr_mret_instr_o & ~csr2exu_mstatus_mie_up_i)
-                            | (exu_queue_vd & exu_queue.fencei_req)
+                            | (exu_queue_vd & fencei_req)
                             | (wfi_run_start_ff
 `ifdef YCR1_CLKCTRL_EN
                             & clk_pipe_en

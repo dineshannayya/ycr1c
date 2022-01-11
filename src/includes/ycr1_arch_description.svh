@@ -245,9 +245,9 @@ parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TIMER_ADDR_PATTERN     = 'h00490000
 //`define YCR1_XPROP_EN                   // enable X-propagation
 
 // Addresses used in testbench
-localparam [`YCR1_XLEN-1:0]      YCR1_SIM_EXIT_ADDR      = 32'h0000_00F8;
-localparam [`YCR1_XLEN-1:0]      YCR1_SIM_PRINT_ADDR     = 32'hF000_0000;
-localparam [`YCR1_XLEN-1:0]      YCR1_SIM_EXT_IRQ_ADDR   = 32'h3000_000C; // Bit [15:0]
-localparam [`YCR1_XLEN-1:0]      YCR1_SIM_SOFT_IRQ_ADDR  = 32'h3000_000C; // Bit[16]
+//localparam [`YCR1_XLEN-1:0]      YCR1_SIM_EXIT_ADDR      = 32'h0000_00F8;
+//localparam [`YCR1_XLEN-1:0]      YCR1_SIM_PRINT_ADDR     = 32'hF000_0000;
+//localparam [`YCR1_XLEN-1:0]      YCR1_SIM_EXT_IRQ_ADDR   = 32'h3000_000C; // Bit [15:0]
+//localparam [`YCR1_XLEN-1:0]      YCR1_SIM_SOFT_IRQ_ADDR  = 32'h3000_000C; // Bit[16]
 
 `endif // YCR1_ARCH_DESCRIPTION_SVH

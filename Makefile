@@ -17,7 +17,7 @@ ifeq ($(CFG), MAX)
     override ARCH         := IMC
     override VECT_IRQ     := 1
     override IPIC         := 1
-    override TCM          := 1
+    override TCM          := 0
     override SIM_CFG_DEF  := YCR1_CFG_RV32IMC_MAX
 else
     ifeq ($(CFG), BASE)
@@ -131,6 +131,9 @@ export CROSS_PREFIX  ?= riscv64-unknown-elf-
 export RISCV_GCC     ?= $(CROSS_PREFIX)gcc
 export RISCV_OBJDUMP ?= $(CROSS_PREFIX)objdump -D
 export RISCV_OBJCOPY ?= $(CROSS_PREFIX)objcopy -O verilog
+export RISCV_ROM_OBJCOPY ?= $(CROSS_PREFIX)objcopy -j .text.init -j .text -j .rodata -j .rodata.str1.4 -O verilog
+#Seperate the RAM content and write out in 32bit Little endian format to load it to TCM Memory
+export RISCV_RAM_OBJCOPY ?= $(CROSS_PREFIX)objcopy -R .text.init -R .text -R .rodata -R .rodata.str1.4 -R .riscv.attributes -R .comment -R .debug_abbrev -R .debug_loc -R .debug_str -O verilog --verilog-data-width=4 --reverse-bytes=4
 export RISCV_READELF ?= $(CROSS_PREFIX)readelf -s
 #--
 ifneq (,$(findstring axi,$(BUS_lowercase)))
@@ -174,20 +177,20 @@ ifeq (,$(findstring e,$(ARCH_lowercase)))
 # These tests cannot be compiled for RVE
 
     # Comment this target if you don't want to run the riscv_isa
-    #TARGETS += riscv_isa
+    TARGETS += riscv_isa
 
     # Comment this target if you don't want to run the riscv_compliance
-    #TARGETS += riscv_compliance
+    TARGETS += riscv_compliance
 endif
 
 # Comment this target if you don't want to run the isr_sample
-#TARGETS += isr_sample
+TARGETS += isr_sample
 
 # Comment this target if you don't want to run the coremark
-#TARGETS += coremark
+TARGETS += coremark
 
 # Comment this target if you don't want to run the dhrystone
-#TARGETS += dhrystone21
+TARGETS += dhrystone21
 
 # Comment this target if you don't want to run the hello test
 TARGETS += hello

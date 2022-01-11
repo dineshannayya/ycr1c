@@ -8,6 +8,11 @@
 `include "ycr1_ipic.svh"
 `endif // YCR1_IPIC_EN
 
+localparam [31:0]      YCR1_SIM_EXIT_ADDR      = 32'h0000_00F8;
+localparam [31:0]      YCR1_SIM_PRINT_ADDR     = 32'hF000_0000;
+localparam [31:0]      YCR1_SIM_EXT_IRQ_ADDR   = 32'hF000_0100;
+localparam [31:0]      YCR1_SIM_SOFT_IRQ_ADDR  = 32'hF000_0200;
+
 module ycr1_top_tb_wb (
 `ifdef VERILATOR
     input logic clk
@@ -111,8 +116,10 @@ bit                                     b_single_run_flag;
 `endif  //  SIGNATURE_OUT
 `ifdef VERILATOR
 logic [255:0]                           test_file     ;
+logic [255:0]                           test_ram_file;
 `else // VERILATOR
 string                                  test_file     ;
+string                                  test_ram_file;
 `endif // VERILATOR
 
 bit                                     test_running  ;
@@ -122,6 +129,8 @@ int unsigned                            tests_total   ;
 bit [1:0]                               rst_cnt       ;
 bit                                     rst_init      ;
 logic [31:0] riscv_dmem_req_cnt; // cnt dmem req
+event	                                reinit_event;
+logic  [31:0]                           tem_mem[0:1047];
 
 
 `ifdef VERILATOR
@@ -252,6 +261,7 @@ assign rst_n = &rst_cnt;
 always_ff @(posedge clk) begin
      if (rst_init)       begin
 	rst_cnt <= '0;
+	-> reinit_event;
     end
     else if (~&rst_cnt) rst_cnt <= rst_cnt + 1'b1;
 end
@@ -271,7 +281,29 @@ end
 `endif // YCR1_DBG_EN
 
 
-
+always @reinit_event
+begin
+   // Initialize the SPI memory with hex content
+   // Wait for reset removal
+   //wait (rst_n == 1);
+   // some of the RISCV test need SRAM area for specific
+   // instruction execution like fence
+   //$sformat(test_ram_file, "%s.ram",test_file);
+   //// Load the RAM content to local temp memory
+   //$readmemh(test_ram_file,tem_mem);
+   //// Split the Temp memory content to two sram file
+   //$readmemh(test_ram_file,tem_mem);
+   //$writememh("sram0.hex",tem_mem,0,511);
+   //$writememh("sram1.hex",tem_mem,512,1023);
+   //// Load the SRAM0/SRAM1 with 2KB data
+   //$write("\033[0;34m---Initializing the u_tsram0_2kb Memory with Hexfile: sram0.hex\033[0m\n");
+   //$readmemh("sram0.hex",u_tsram0_2kb.mem);
+   //$write("\033[0;34m---Initializing the u_tsram1_2kb Memory with Hexfile: sram1.hex\033[0m\n");
+   //$readmemh("sram1.hex",u_tsram1_2kb.mem);
+   
+   //for(i =32'h00; i < 32'h100; i = i+1)
+   //    $display("Location: %x, Data: %x", i, u_tsram0_2kb.mem[i]);
+end
 
 //-------------------------------------------------------------------------------
 // Run tests
@@ -479,8 +511,8 @@ end
 initial
 begin
    $dumpfile("simx.vcd");
-   $dumpvars(2,ycr1_top_tb_wb);
-   $dumpvars(4,ycr1_top_tb_wb.i_top);
+   $dumpvars(0,ycr1_top_tb_wb);
+   //$dumpvars(0,ycr1_top_tb_wb.i_top);
 end
 `endif
 

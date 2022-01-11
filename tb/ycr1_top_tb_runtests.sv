@@ -2,6 +2,7 @@
 /// @brief      YCR1 testbench run tests
 ///
 
+
 //-------------------------------------------------------------------------------
 // Run tests
 //-------------------------------------------------------------------------------
@@ -53,7 +54,7 @@ end
            $display("RISCV-DEBUG => DMEM ADDRESS: %x READ Data : %x Resonse: %x", core2dmem_addr_o_r,`RISC_CORE.dmem2core_rdata_i,`RISC_CORE.dmem2core_resp_i);
  end
 **/
-/**
+/***
   logic [31:0] test_count;
  `define RISC_CORE  i_top.i_core_top
  `define RISC_EXU  i_top.i_core_top.i_pipe_top.i_pipe_exu
@@ -69,7 +70,7 @@ end
                test_count <= test_count+1;
 	  end
  end
-**/
+ ***/
 
 always_ff @(posedge clk) begin
     bit test_pass;
@@ -77,6 +78,10 @@ always_ff @(posedge clk) begin
     if (test_running) begin
         test_pass = 1;
         rst_init <= 1'b0;
+	if(i_top.i_core_top.i_pipe_top.curr_pc === 32'hxxxx_xxxx) begin
+	   $display("ERROR: CURRENT PC Counter State is Known");
+	   $finish;
+	end
         if ((i_top.i_core_top.i_pipe_top.curr_pc == YCR1_SIM_EXIT_ADDR) & ~rst_init & &rst_cnt) begin
             `ifdef VERILATOR
                 logic [255:0] full_filename;
@@ -103,6 +108,7 @@ always_ff @(posedge clk) begin
                 fd = $fopen("script.sh", "w");
                 if (fd == 0) begin
                     $write("Can't open script.sh\n");
+                    $display("ERRIR:Can't open script.sh\n");
                     test_pass = 0;
                 end
                 $fwrite(fd, "%s", tmpstr);
@@ -113,10 +119,12 @@ always_ff @(posedge clk) begin
                 fd = $fopen("elfinfo", "r");
                 if (fd == 0) begin
                     $write("Can't open elfinfo\n");
+                    $display("ERROR: Can't open elfinfo\n");
                     test_pass = 0;
                 end
                 if ($fscanf(fd,"%h\n%h", start, stop) != 2) begin
                     $write("Wrong elfinfo data\n");
+                    $display("ERROR:Wrong elfinfo data: start: %x stop: %x\n",start,stop);
                     test_pass = 0;
                 end
                 if (start > stop) begin
@@ -125,6 +133,11 @@ always_ff @(posedge clk) begin
                     stop = tmpv;
                 end
                 $fclose(fd);
+
+		if((start & 32'h1FFF) > 512)
+			$display("ERROR: Start address is more than 512, Start: %x",start & 32'h1FFF);
+		if((stop & 32'h1FFF) > 512)
+			$display("ERROR: Stop address is more than 512, Start: %x",stop & 32'h1FFF);
 
                 `ifdef SIGNATURE_OUT
 
@@ -135,6 +148,10 @@ always_ff @(posedge clk) begin
                     fd = $fopen(tmpstr, "w");
                     while ((start != stop)) begin
                         test_data = {i_memory_tb.memory[start+3], i_memory_tb.memory[start+2], i_memory_tb.memory[start+1], i_memory_tb.memory[start]};
+                        //test_data[31:24] = u_tsram0_2kb.mem[(start & 32'h1FFF)+3];
+                        //test_data[23:16] = u_tsram0_2kb.mem[(start & 32'h1FFF)+2];
+                        //test_data[15:8]  = u_tsram0_2kb.mem[(start & 32'h1FFF)+1];
+                        //test_data[7:0]   = u_tsram0_2kb.mem[(start & 32'h1FFF)+0];
                         $fwrite(fd, "%x", test_data);
                         $fwrite(fd, "%s", "\n");
                         start += 4;
@@ -148,12 +165,22 @@ always_ff @(posedge clk) begin
                     fd = $fopen(tmpstr,"r");
                     if (fd == 0) begin
                         $write("Can't open reference_data file: %s\n", tmpstr);
+                        $display("ERROR: Can't open reference_data file: %s\n", tmpstr);
                         test_pass = 0;
                     end
                     while (!$feof(fd) && (start != stop)) begin
                         $fscanf(fd, "0x%h,\n", ref_data);
+			//----------------------------------------------------
+			// Assumed all signaure are with-in first 512 location of memory, 
+			// other-wise need to switch bank
+			// --------------------------------------------------
+		        //$writememh("sram0_out.hex",u_tsram0_2kb.mem,0,511);
+                       // test_data = u_tsram0_2kb.mem[((start >> 2) & 32'h1FFF)];
+			//$display("Compare Addr: %x ref_data : %x, test_data: %x",start,ref_data,test_data);
                         test_data = {i_memory_tb.memory[start+3], i_memory_tb.memory[start+2], i_memory_tb.memory[start+1], i_memory_tb.memory[start]};
                         test_pass &= (ref_data == test_data);
+			if(ref_data != test_data)
+			   $display("ERROR: Compare Addr: %x Mem Addr: %x ref_data : %x, test_data: %x",start,start & 32'h1FFF,ref_data,test_data);
                         start += 4;
                     end
                     $fclose(fd);
@@ -165,8 +192,10 @@ always_ff @(posedge clk) begin
                         $write("\033[0;31mTest failed\033[0m\n");
                     end
                 `endif  // SIGNATURE_OUT
-            end else begin
+            end else begin // Non compliance mode
                 test_running <= 1'b0;
+		if(i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10] != 0)
+		   $display("ERROR: mprf_int[10]: %x not zero",i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10]);
                 test_pass = (i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10] == 0);
                 tests_total     += 1;
                 tests_passed    += test_pass;

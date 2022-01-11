@@ -45,72 +45,58 @@ SECTIONS {
     LONG(0x6F);
     LONG(-1);
     . = 0x100;
-    *crt_tcm.o(.text .text.*)
-    *(.text.init)
-    . = ALIGN(CL_SIZE);
+    PROVIDE(__TEXT_START__ = .);
+    *(.text.init) 
   } >RAM
 
-  __reloc_start = .;
-
-  .text : {
-    PROVIDE(__TEXT_START__ = .);
+  .text  : {
+    *crt.o(.text .text.*)
     *(.text .text.*)
     *(sc_test_section)
     . = ALIGN(CL_SIZE);
      PROVIDE(__TEXT_END__ = .);
-  } >TCM AT>RAM
-
-  .rodata ALIGN(CL_SIZE) : {
-    __global_pointer$ = . + 0x800;
-    *(.rodata) *(.rodata.*) *(.gnu.linkonce.r.*)
-    . = ALIGN(CL_SIZE);
-    LONG(0x13);
-    . = ALIGN(CL_SIZE);
-  } >TCM AT>RAM
-
+  } >RAM 
 
   /* data segment */
-  .data ALIGN(CL_SIZE) : {
-    PROVIDE(__DATA_START__ = .);
+  .data : {
     *(.data .data.*)
     . = ALIGN(CL_SIZE);
-  } >TCM 
-  
-  .sdata ALIGN(CL_SIZE) : {
+  } >RAM
+
+  .sdata : {
+    __global_pointer$ = . + 0x800;
+    *(.srodata.cst16) *(.srodata.cst8) *(.srodata.cst4) *(.srodata.cst2) *(.srodata*)
     *(.sdata .sdata.* .gnu.linkonce.s.*)
     . = ALIGN(CL_SIZE);
-    PROVIDE(__DATA_END__ = .);
-  } >TCM
+  } >RAM
 
   /* thread-local data segment */
-  .tdata ALIGN(CL_SIZE) : {
+  .tdata : {
     PROVIDE(_tls_data = .);
     PROVIDE(_tdata_begin = .);
     *(.tdata .tdata.*)
     PROVIDE(_tdata_end = .);
     . = ALIGN(CL_SIZE);
-  } >TCM
+  } >RAM
 
-  .tbss ALIGN(CL_SIZE) : {
-    PROVIDE(_tbss_begin = .);
+  .tbss : {
+    PROVIDE(__BSS_START__ = .);
     *(.tbss .tbss.*)
     . = ALIGN(CL_SIZE);
     PROVIDE(_tbss_end = .);
-  } >TCM
+  } >RAM
 
   /* bss segment */
-  .sbss ALIGN(CL_SIZE) : {
-    PROVIDE(__BSS_START__ = .);
+  .sbss : {
     *(.sbss .sbss.* .gnu.linkonce.sb.*)
     *(.scommon)
-    . = ALIGN(CL_SIZE);
-  } >TCM
+  } >RAM
 
-  .bss ALIGN(CL_SIZE) : {
-    *(.dynbss) *(.bss .bss.* .gnu.linkonce.b.*) *(COMMON)
+  .bss : {
+    *(.bss .bss.*)
     . = ALIGN(CL_SIZE);
     PROVIDE(__BSS_END__ = .);
-  } >TCM
+  } >RAM
 
   _end = .;
   PROVIDE(__end = .);

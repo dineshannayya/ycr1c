@@ -131,7 +131,7 @@ build_verilator: $(sv_list)
 	--exe $(ycr1_wrapper) \
 	--Mdir $(bld_dir)/verilator \
 	-I$(rtl_inc_dir) \
-	-I$(rtl_tb_dir) \
+	-I$(rtl_inc_tb_dir) \
 	$(SIM_BUILD_OPTS) \
 	$(sv_list); \
 	cd verilator; \
