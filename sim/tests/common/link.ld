@@ -90,7 +90,7 @@ SECTIONS {
   .sbss : {
     *(.sbss .sbss.* .gnu.linkonce.sb.*)
     *(.scommon)
-  } >RAM
+  } >TCM
 
   .bss : {
     *(.bss .bss.*)
@@ -103,13 +103,13 @@ SECTIONS {
 
   /* End of uninitalized data segement */
 
-  .stack ORIGIN(RAM) + LENGTH(RAM) - STACK_SIZE : {
+  .stack ORIGIN(TCM) + LENGTH(TCM) - STACK_SIZE : {
     FILL(0);
     PROVIDE(__STACK_START__ = .);
     . += STACK_SIZE;
     PROVIDE(__C_STACK_TOP__ = .);
     PROVIDE(__STACK_END__ = .);
-  } >RAM
+  } >TCM
 
   /DISCARD/ : {
     *(.eh_frame .eh_frame.*)

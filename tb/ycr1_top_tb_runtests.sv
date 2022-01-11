@@ -134,10 +134,10 @@ always_ff @(posedge clk) begin
                 end
                 $fclose(fd);
 
-		if((start & 32'h1FFF) > 512)
-			$display("ERROR: Start address is more than 512, Start: %x",start & 32'h1FFF);
-		if((stop & 32'h1FFF) > 512)
-			$display("ERROR: Stop address is more than 512, Start: %x",stop & 32'h1FFF);
+		//if((start & 32'h1FFF) > 512)
+		//	$display("ERROR: Start address is more than 512, Start: %x",start & 32'h1FFF);
+		//if((stop & 32'h1FFF) > 512)
+		//	$display("ERROR: Stop address is more than 512, Start: %x",stop & 32'h1FFF);
 
                 `ifdef SIGNATURE_OUT
 
