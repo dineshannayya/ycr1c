@@ -2,7 +2,10 @@
 # Makefile for YCR1
 #------------------------------------------------------------------------------
 
-#SHELL = sh -xv
+SHELL = sh -xv
+
+SIM ?= RTL
+DUMP ?= OFF
 
 # PARAMETERS
 
@@ -241,7 +244,7 @@ $(bld_dir):
 	mkdir -p $(bld_dir)
 
 run_vcs: $(test_info)
-	$(MAKE) -C $(root_dir)/sim build_vcs SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS);
+	$(MAKE) -C $(root_dir)/sim build_vcs SIM=${SIM} DUMP=${DUMP} SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS);
 	printf "" > $(test_results);
 	cd $(bld_dir); \
 	$(bld_dir)/simv  -V \
@@ -253,7 +256,7 @@ run_vcs: $(test_info)
 	printf "                          Test               | build | simulation \n" ; \
 	printf "$$(cat $(test_results)) \n"
 run_modelsim: $(test_info)
-	$(MAKE) -C $(root_dir)/sim build_modelsim SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS); \
+	$(MAKE) -C $(root_dir)/sim build_modelsim SIM=${SIM} DUMP=${DUMP} SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS); \
 	printf "" > $(test_results); \
 	cd $(bld_dir); \
 	vsim -c -do "run -all" +nowarn3691 \
@@ -268,7 +271,7 @@ run_modelsim: $(test_info)
 	printf "$$(cat $(test_results)) \n"
 
 run_iverilog: $(test_info)
-	$(MAKE) -C $(root_dir)/sim build_iverilog SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS); \
+	$(MAKE) -C $(root_dir)/sim build_iverilog SIM=${SIM} DUMP=${DUMP} SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS); \
 	printf "" > $(test_results); \
 	cd $(bld_dir); \
         iverilog-vpi ../../sim/iverilog_vpi/system.c; \
@@ -283,7 +286,7 @@ run_iverilog: $(test_info)
 	printf "$$(cat $(test_results)) \n"
 
 run_iverilog_wf: $(test_info)
-	$(MAKE) -C $(root_dir)/sim build_iverilog_wf SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS); \
+	$(MAKE) -C $(root_dir)/sim build_iverilog_wf SIM=${SIM} DUMP=${DUMP} SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS); \
 	printf "" > $(test_results); \
 	cd $(bld_dir); \
         iverilog-vpi ../../sim/iverilog_vpi/system.c; \
@@ -298,7 +301,7 @@ run_iverilog_wf: $(test_info)
 	printf "$$(cat $(test_results)) \n"
 
 run_modelsim_wlf: $(test_info)
-	$(MAKE) -C $(root_dir)/sim build_modelsim_wlf SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS); \
+	$(MAKE) -C $(root_dir)/sim build_modelsim_wlf SIM=${SIM} DUMP=${DUMP} SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS); \
 	printf "" > $(test_results); \
 	cd $(bld_dir); \
 	vsim -c -do "run -all" +nowarn3691 \
@@ -312,7 +315,7 @@ run_modelsim_wlf: $(test_info)
 	printf "                          Test               | build | simulation \n" ; \
 	printf "$$(cat $(test_results)) \n"
 run_ncsim: $(test_info)
-	$(MAKE) -C $(root_dir)/sim build_ncsim SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS);
+	$(MAKE) -C $(root_dir)/sim build_ncsim SIM=${SIM} DUMP=${DUMP} SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS);
 	printf "" > $(test_results);
 	cd $(bld_dir); \
 	irun \
@@ -328,7 +331,7 @@ run_ncsim: $(test_info)
 	printf "$$(cat $(test_results)) \n"
 
 run_verilator: $(test_info)
-	$(MAKE) -C $(root_dir)/sim build_verilator SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS);
+	$(MAKE) -C $(root_dir)/sim build_verilator SIM=${SIM} DUMP=${DUMP} SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS);
 	printf "" > $(test_results);
 	cd $(bld_dir); \
 	echo $(top_module) | tee $(sim_results); \
@@ -343,7 +346,7 @@ run_verilator: $(test_info)
 	printf "$$(cat $(test_results)) \n"
 
 run_verilator_wf: $(test_info)
-	$(MAKE) -C $(root_dir)/sim build_verilator_wf SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS);
+	$(MAKE) -C $(root_dir)/sim build_verilator_wf SIM=${SIM} DUMP=${DUMP} SIM_CFG_DEF=$(SIM_CFG_DEF) SIM_TRACE_DEF=$(SIM_TRACE_DEF) SIM_BUILD_OPTS=$(SIM_BUILD_OPTS);
 	printf "" > $(test_results);
 	cd $(bld_dir); \
 	echo $(top_module) | tee $(sim_results); \

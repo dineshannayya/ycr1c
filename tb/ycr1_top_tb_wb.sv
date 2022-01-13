@@ -8,6 +8,10 @@
 `include "ycr1_ipic.svh"
 `endif // YCR1_IPIC_EN
 
+`include "uprj_netlists.v"
+`include "ycr1_memory_tb_wb.sv"
+`include "sky130_sram_2kbyte_1rw1r_32x512_8.v"
+
 localparam [31:0]      YCR1_SIM_EXIT_ADDR      = 32'h0000_00F8;
 localparam [31:0]      YCR1_SIM_PRINT_ADDR     = 32'hF000_0000;
 localparam [31:0]      YCR1_SIM_EXT_IRQ_ADDR   = 32'hF000_0100;
@@ -511,8 +515,9 @@ end
 initial
 begin
    $dumpfile("simx.vcd");
-   $dumpvars(0,ycr1_top_tb_wb);
+   //$dumpvars(0,ycr1_top_tb_wb);
    //$dumpvars(0,ycr1_top_tb_wb.i_top);
+   $dumpvars(0,ycr1_top_tb_wb.i_top.i_core_top.i_pipe_top.i_pipe_mprf);
 end
 `endif
 

@@ -72,17 +72,56 @@ end
  end
  ***/
 
+`ifdef GL
+//  wire [31:0] func_return_val = {i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][31],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][30],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][29],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][28],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][27],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][26],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][25],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][24],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][23],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][22],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][21],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][20],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][19],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][18],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][17],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][16],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][15],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][14],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][13],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][12],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][11],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][10],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][9],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][8],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][7],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][6],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][5],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][4],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][3],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][2],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][1],
+//	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][0]};
+//
+  wire [31:0] func_return_val = i_top.i_core_top.i_pipe_top.i_pipe_mprf.func_return_val; //
+`else
+  wire [31:0] func_return_val = i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10];
+`endif
+
 always_ff @(posedge clk) begin
     bit test_pass;
     int unsigned                            f_test;
     if (test_running) begin
         test_pass = 1;
         rst_init <= 1'b0;
-	if(i_top.i_core_top.i_pipe_top.curr_pc === 32'hxxxx_xxxx) begin
+	if(i_top.i_core_top.i_pipe_top.i_pipe_exu.exu2pipe_pc_curr_o === 32'hxxxx_xxxx) begin
 	   $display("ERROR: CURRENT PC Counter State is Known");
 	   $finish;
 	end
-        if ((i_top.i_core_top.i_pipe_top.curr_pc == YCR1_SIM_EXIT_ADDR) & ~rst_init & &rst_cnt) begin
+        if ((i_top.i_core_top.i_pipe_top.i_pipe_exu.exu2pipe_pc_curr_o == YCR1_SIM_EXIT_ADDR) & ~rst_init & &rst_cnt) begin
             `ifdef VERILATOR
                 logic [255:0] full_filename;
                 full_filename = test_file;
@@ -194,9 +233,10 @@ always_ff @(posedge clk) begin
                 `endif  // SIGNATURE_OUT
             end else begin // Non compliance mode
                 test_running <= 1'b0;
-		if(i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10] != 0)
-		   $display("ERROR: mprf_int[10]: %x not zero",i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10]);
-                test_pass = (i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10] == 0);
+		//if(i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10] != 0)
+		if(func_return_val != 0)
+		   $display("ERROR: mprf_int[10]: %x not zero",func_return_val);
+                test_pass = (func_return_val == 0);
                 tests_total     += 1;
                 tests_passed    += test_pass;
                 `ifndef SIGNATURE_OUT

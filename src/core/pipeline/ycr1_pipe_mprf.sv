@@ -58,7 +58,9 @@ module ycr1_pipe_mprf (
     output  logic [`YCR1_XLEN-1:0]              mprf2exu_rs2_data_o,        // MPRF rs2 read data
     input   logic                               exu2mprf_w_req_i,           // MPRF write request
     input   logic [`YCR1_MPRF_AWIDTH-1:0]       exu2mprf_rd_addr_i,         // MPRF rd write address
-    input   logic [`YCR1_XLEN-1:0]              exu2mprf_rd_data_i          // MPRF rd write data
+    input   logic [`YCR1_XLEN-1:0]              exu2mprf_rd_data_i,         // MPRF rd write data
+
+    output  logic [`YCR1_XLEN-1:0]              func_return_val    // Debug Purpose
 );
 
 //-------------------------------------------------------------------------------
@@ -118,6 +120,9 @@ logic   [`YCR1_XLEN-1:0]    mprf_int2  [1:`YCR1_MPRF_SIZE-1];
 `else  // distributed logic implementation
 logic [`YCR1_XLEN-1:0]      mprf_int [1:`YCR1_MPRF_SIZE-1];
 `endif
+
+// Location[0] hold the function return value
+wire [31:0] func_return_val = mprf_int[10];
 
 //------------------------------------------------------------------------------
 // MPRF control logic
