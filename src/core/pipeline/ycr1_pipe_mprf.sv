@@ -122,7 +122,7 @@ logic [`YCR1_XLEN-1:0]      mprf_int [1:`YCR1_MPRF_SIZE-1];
 `endif
 
 // Location[0] hold the function return value
-wire [31:0] func_return_val = mprf_int[10];
+assign [31:0] func_return_val = mprf_int[10];
 
 //------------------------------------------------------------------------------
 // MPRF control logic
