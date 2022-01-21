@@ -101,6 +101,8 @@
 
 // If all defines are commented, custom configuration will be used (see below)
 
+`define YCR1_ICACHE_EN   // Enable ICACHE
+
 //------------------------------------------------------------------------------
 // READ-ONLY: settings for recommended configurations
 `ifdef  YCR1_CFG_RV32IMC_MAX
@@ -208,11 +210,19 @@ parameter int unsigned YCR1_TDU_TRIG_NUM = 2;   // number of hardware triggers
 parameter bit [`YCR1_XLEN-1:0]          YCR1_ARCH_RST_VECTOR        = 'h200;            // Reset vector value (start address after reset)
 parameter bit [`YCR1_XLEN-1:0]          YCR1_ARCH_MTVEC_BASE        = 'h1C0;            // MTVEC.base field reset value, or constant value for MTVEC.base bits that are hardwired
 
-parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TCM_ADDR_MASK          = 'hFFFF0000;       // TCM mask and size; size in bytes is two's complement of the mask value
-parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TCM_ADDR_PATTERN       = 'h00480000;       // TCM address match pattern
+// icache address range 0x0000_0000 to 0x07FF_FFFF - 128MB
+parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_ICACHE_ADDR_MASK       = 'hF8000000;       // ICACHE mask and size; size in bytes is two's complement of the mask value
+parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_ICACHE_ADDR_PATTERN    = 'h00000000;       // ICACHE address match pattern
+
+// dcache address range 0x0800_0000 to 0x0BFF_FFFF - 64MB
+parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_DCACHE_ADDR_MASK       = 'hFC000000;       // DCACHE mask and size; size in bytes is two's complement of the mask value
+parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_DCACHE_ADDR_PATTERN    = 'h08000000;       // DCACHE address match pattern
+
+parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TCM_ADDR_MASK          = 'hFFF80000;       // TCM mask and size; size in bytes is two's complement of the mask value
+parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TCM_ADDR_PATTERN       = 'h08480000;       // TCM address match pattern
 
 parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TIMER_ADDR_MASK        = 'hFFFFFFE0;       // Timer mask
-parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TIMER_ADDR_PATTERN     = 'h00490000;       // Timer address match pattern
+parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TIMER_ADDR_PATTERN     = 'h08490000;       // Timer address match pattern
 
 // Device build ID
  `define YCR1_ARCH_BUILD_ID             `YCR1_MIMPID

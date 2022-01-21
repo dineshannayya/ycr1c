@@ -136,6 +136,21 @@ logic [31:0] riscv_dmem_req_cnt; // cnt dmem req
 event	                                reinit_event;
 logic  [31:0]                           tem_mem[0:1047];
 
+`ifdef YCR1_ICACHE_EN
+   // Wishbone ICACHE I/F
+   logic                             wb_icache_cyc_o; // strobe/request
+   logic                             wb_icache_stb_o; // strobe/request
+   logic   [YCR1_WB_WIDTH-1:0]       wb_icache_adr_o; // address
+   logic                             wb_icache_we_o;  // write
+   logic   [YCR1_WB_WIDTH-1:0]       wb_icache_dat_o; // data output
+   logic   [3:0]                     wb_icache_sel_o; // byte enable
+   logic   [9:0]                     wb_icache_bl_o;  // Burst Length
+
+   logic   [YCR1_WB_WIDTH-1:0]       wb_icache_dat_i; // data input
+   logic                             wb_icache_ack_i; // acknowlegement
+   logic                             wb_icache_lack_i;// last acknowlegement
+   logic                             wb_icache_err_i;  // error
+`endif
 
 `ifdef VERILATOR
 function bit is_compliance (logic [255:0] testname);
@@ -394,6 +409,21 @@ ycr1_top_wb i_top (
 
     .wb_rst_n               (rst_n                  ),
     .wb_clk                 (clk                    ),
+   `ifdef YCR1_ICACHE_EN
+   // Wishbone ICACHE I/F
+    .wb_icache_cyc_o                    (wb_icache_cyc_o  ), // strobe/request
+    .wb_icache_stb_o                    (wb_icache_stb_o  ), // strobe/request
+    .wb_icache_adr_o                    (wb_icache_adr_o  ), // address
+    .wb_icache_we_o                     (wb_icache_we_o   ),  // write
+    .wb_icache_dat_o                    (wb_icache_dat_o  ), // data output
+    .wb_icache_sel_o                    (wb_icache_sel_o  ), // byte enable
+    .wb_icache_bl_o                     (wb_icache_bl_o   ),  // Burst Length
+                                                          
+    .wb_icache_dat_i                    (wb_icache_dat_i  ), // data input
+    .wb_icache_ack_i                    (wb_icache_ack_i  ), // acknowlegement
+    .wb_icache_lack_i                   (wb_icache_lack_i ),// last acknowlegement
+    .wb_icache_err_i                    (wb_icache_err_i  ),  // error
+   `endif
 
     .wbd_imem_stb_o         (wbd_imem_stb_o         ),
     .wbd_imem_adr_o         (wbd_imem_adr_o         ),
@@ -433,14 +463,34 @@ ycr1_memory_tb_wb #(
     .imem_req_ack_stall_in  (imem_req_ack_stall     ),
     .dmem_req_ack_stall_in  (dmem_req_ack_stall     ),
 
+   `ifdef YCR1_ICACHE_EN
+
+    .wbd_imem_stb_i         (wb_icache_stb_o       ),
+    .wbd_imem_adr_i         (wb_icache_adr_o       ),
+    .wbd_imem_we_i          (wb_icache_we_o        ),
+    .wbd_imem_dat_i         (wb_icache_dat_o       ),
+    .wbd_imem_sel_i         (wb_icache_sel_o       ),
+    .wbd_imem_bl_i          (wb_icache_bl_o        ),
+    .wbd_imem_dat_o         (wb_icache_dat_i       ),
+    .wbd_imem_ack_o         (wb_icache_ack_i       ),
+    .wbd_imem_lack_o        (wb_icache_lack_i      ),
+    .wbd_imem_err_o         (wb_icache_err_i       ),
+
+
+   `else 
+
     .wbd_imem_stb_i         (wbd_imem_stb_o         ),
     .wbd_imem_adr_i         (wbd_imem_adr_o         ),
     .wbd_imem_we_i          (wbd_imem_we_o          ),
     .wbd_imem_dat_i         (wbd_imem_dat_o         ),
     .wbd_imem_sel_i         (wbd_imem_sel_o         ),
+    .wbd_imem_bl_i          (10'h1                  ),
     .wbd_imem_dat_o         (wbd_imem_dat_i         ),
     .wbd_imem_ack_o         (wbd_imem_ack_i         ),
+    .wbd_imem_lack_o        (                       ),
     .wbd_imem_err_o         (wbd_imem_err_i         ),
+
+    `endif
 
     .wbd_dmem_stb_i         (wbd_dmem_stb_o         ),
     .wbd_dmem_adr_i         (wbd_dmem_adr_o         ),
@@ -515,9 +565,9 @@ end
 initial
 begin
    $dumpfile("simx.vcd");
-   //$dumpvars(0,ycr1_top_tb_wb);
+   $dumpvars(0,ycr1_top_tb_wb);
    //$dumpvars(0,ycr1_top_tb_wb.i_top);
-   $dumpvars(0,ycr1_top_tb_wb.i_top.i_core_top.i_pipe_top.i_pipe_mprf);
+   //$dumpvars(0,ycr1_top_tb_wb.i_top.i_core_top.i_pipe_top.i_pipe_mprf);
 end
 `endif
 

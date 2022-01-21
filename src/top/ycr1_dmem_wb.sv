@@ -176,7 +176,7 @@ end
 endfunction
 
 function automatic logic[YCR1_WB_WIDTH-1:0] ycr1_conv_wb2mem_rdata (
-    input   logic [2:0]                 hwidth,
+    input   logic [1:0]                 hwidth,
     input   logic [1:0]                 haddr,
     input   logic [YCR1_WB_WIDTH-1:0]  hrdata
 );

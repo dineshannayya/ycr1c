@@ -32,17 +32,18 @@
 ////      - Dinesh Annayya, dinesha@opencores.org                         ////
 ////                                                                      ////
 ////  Revision :                                                          ////
-////     v0:    June 7, 2021, Dinesh A                                    ////
+////     0.0:    June 7, 2021, Dinesh A                                   ////
 ////             wishbone integration                                     ////
-////     v1:    June 17, 2021, Dinesh A                                   ////
+////     0.1:    June 17, 2021, Dinesh A                                  ////
 ////             core and wishbone clock domain are seperated             ////
 ////             Async fifo added in imem and dmem path                   ////
-////     v2:    July 7, 2021, Dinesh A                                    ////
+////     0.2:    July 7, 2021, Dinesh A                                   ////
 ////            64bit debug signal added                                  ////
-////     v3:    Aug 23, 2021, Dinesh A                                    ////
+////     0.3:    Aug 23, 2021, Dinesh A                                   ////
 ////            timer_irq connective bug fix                              ////
-////     v4:    Nov 12, 2021, Dinesh A                                    ////
-////            2KB SRAM Integrated at TCM Interface                      ////
+////     1.0:   Jan 20, 2022, Dinesh A                                    ////
+////            128MB icache integrated in address range 0x0000_0000 to   ////
+////            0x07FF_FFFF                                               ////
 ////                                                                      ////
 //////////////////////////////////////////////////////////////////////////////
 
@@ -143,6 +144,23 @@ module ycr1_top_wb (
 
     input   logic                           wb_rst_n,       // Wish bone reset
     input   logic                           wb_clk,         // wish bone clock
+
+   `ifdef YCR1_ICACHE_EN
+   // Wishbone ICACHE I/F
+   output logic                             wb_icache_cyc_o, // strobe/request
+   output logic                             wb_icache_stb_o, // strobe/request
+   output logic   [YCR1_WB_WIDTH-1:0]       wb_icache_adr_o, // address
+   output logic                             wb_icache_we_o,  // write
+   output logic   [YCR1_WB_WIDTH-1:0]       wb_icache_dat_o, // data output
+   output logic   [3:0]                     wb_icache_sel_o, // byte enable
+   output logic   [9:0]                     wb_icache_bl_o,  // Burst Length
+
+   input logic   [YCR1_WB_WIDTH-1:0]        wb_icache_dat_i, // data input
+   input logic                              wb_icache_ack_i, // acknowlegement
+   input logic                              wb_icache_lack_i,// last acknowlegement
+   input logic                              wb_icache_err_i,  // error
+   `endif
+
     // Instruction Memory Interface
     output  logic                           wbd_imem_stb_o, // strobe/request
     output  logic   [YCR1_WB_WIDTH-1:0]     wbd_imem_adr_o, // address
@@ -336,6 +354,21 @@ ycr1_intf u_intf (
     .wbd_dmem_ack_i                     (wbd_dmem_ack_i),     // acknowlegement
     .wbd_dmem_err_i                     (wbd_dmem_err_i),     // error
 
+   `ifdef YCR1_ICACHE_EN
+   // Wishbone ICACHE I/F
+    .wb_icache_cyc_o                    (wb_icache_cyc_o  ), // strobe/request
+    .wb_icache_stb_o                    (wb_icache_stb_o  ), // strobe/request
+    .wb_icache_adr_o                    (wb_icache_adr_o  ), // address
+    .wb_icache_we_o                     (wb_icache_we_o   ), // write
+    .wb_icache_dat_o                    (wb_icache_dat_o  ), // data output
+    .wb_icache_sel_o                    (wb_icache_sel_o  ), // byte enable
+    .wb_icache_bl_o                     (wb_icache_bl_o   ),  // Burst Length
+                                                          
+    .wb_icache_dat_i                    (wb_icache_dat_i  ), // data input
+    .wb_icache_ack_i                    (wb_icache_ack_i  ), // acknowlegement
+    .wb_icache_lack_i                   (wb_icache_lack_i ),// last acknowlegement
+    .wb_icache_err_i                    (wb_icache_err_i  ),  // error
+   `endif
     // Common
     .pwrup_rst_n_sync                   (pwrup_rst_n_sync),   // Power-Up reset
     .rst_n_sync                         (rst_n_sync),         // Regular reset

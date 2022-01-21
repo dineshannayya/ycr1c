@@ -7,6 +7,7 @@ rtl_core_files ?= core.files
 rtl_top_files ?= ahb_top.files
 rtl_tb_files ?= ahb_tb.files
 rtl_inc_dir ?= $(root_dir)/src/includes
+cache_inc_dir ?= $(root_dir)/src/cache/src/core
 rtl_dir ?= $(root_dir)/src/
 synth_dir ?= $(root_dir)/synth/
 rtl_inc_tb_dir ?= $(root_dir)/tb/
@@ -50,6 +51,7 @@ build_iverilog:
 	-I $(rtl_dir) \
 	-I $(synth_dir) \
 	-I $(rtl_inc_dir) \
+	-I $(cache_inc_dir) \
 	-I $(rtl_inc_tb_dir) \
 	-D $(SIM_CFG_DEF) \
 	$(SIM_BUILD_OPTS) \
@@ -66,6 +68,7 @@ build_iverilog_wf:
 	-I $(rtl_dir) \
 	-I $(synth_dir) \
 	-I $(rtl_inc_dir) \
+	-I $(cache_inc_dir) \
 	-I $(rtl_inc_tb_dir) \
 	-D $(SIM_CFG_DEF) \
 	-D $(SIM) \
@@ -82,6 +85,7 @@ build_modelsim:
 	+incdir+$(rtl_dir) \
 	+incdir+$(synth_dir) \
 	+incdir+$(rtl_inc_dir) \
+	+incdir+$(cache_inc_dir) \
 	+incdir+$(rtl_inc_tb_dir) \
 	+nowarnSVCHK  \
 	+define+YCR1_TRGT_SIMULATION \
@@ -101,6 +105,7 @@ build_modelsim_wlf:
 	+incdir+$(rtl_dir) \
 	+incdir+$(synth_dir) \
 	+incdir+$(rtl_inc_dir) \
+	+incdir+$(cache_inc_dir) \
 	+incdir+$(rtl_inc_tb_dir) \
 	+nowarnSVCHK  \
 	+define+FUNCTIONAL \
@@ -124,6 +129,7 @@ build_vcs:
 	+incdir+$(rtl_dir) \
 	+incdir+$(synth_dir) \
 	+incdir+$(rtl_inc_dir) \
+	+incdir+$(cache_inc_dir) \
 	+incdir+$(rtl_inc_tb_dir) \
 	+define+FUNCTIONAL \
 	+define+YCR1_TRGT_SIMULATION \
@@ -147,6 +153,7 @@ build_ncsim:
 	-incdir $(rtl_dir) \
 	-incdir $(synth_dir) \
 	-incdir $(rtl_inc_dir) \
+	-incdir $(cache_inc_dir) \
 	-incdir $(rtl_inc_tb_dir) \
 	-debug \
 	+define+FUNCTIONAL \
@@ -178,6 +185,7 @@ build_verilator:
 	-I$(rtl_dir) \
 	-I$(synth_dir) \
 	-I$(rtl_inc_dir) \
+	-I$(cache_inc_dir) \
 	-I$(rtl_inc_tb_dir) \
 	$(SIM_BUILD_OPTS) \
 	$(ycr1_tb_top); \
@@ -210,6 +218,7 @@ build_verilator_wf:
 	-I$(rtl_dir) \
 	-I$(synth_dir) \
 	-I$(rtl_inc_dir) \
+	-I$(cache_inc_dir) \
 	-I$(rtl_inc_tb_dir) \
 	$(SIM_BUILD_OPTS) \
 	$(ycr1_tb_top); \

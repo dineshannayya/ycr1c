@@ -7,7 +7,14 @@ top/ycr1_imem_wb.sv
 top/ycr1_top_wb.sv
 top/ycr1_intf.sv
 top/ycr1_imem_router.sv
+top/ycr1_icache_router.sv
+lib/ycr1_async_wbb.sv
+lib/ycr1_arb.sv
 lib/sync_fifo.sv
 lib/async_fifo.sv
 lib/clk_skew_adjust.gv
 lib/ctech_cells.sv
+cache/src/core/icache_top.sv
+cache/src/core/icache_app_fsm.sv
+cache/src/core/icache_tag_fifo.sv
+
