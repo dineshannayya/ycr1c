@@ -10,6 +10,7 @@
 
 `include "uprj_netlists.v"
 `include "ycr1_memory_tb_wb.sv"
+`include "ycr1_dmem_tb_wb.sv"
 `include "sky130_sram_2kbyte_1rw1r_32x512_8.v"
 
 localparam [31:0]      YCR1_SIM_EXIT_ADDR      = 32'h0000_00F8;
@@ -145,11 +146,29 @@ logic  [31:0]                           tem_mem[0:1047];
    logic   [YCR1_WB_WIDTH-1:0]       wb_icache_dat_o; // data output
    logic   [3:0]                     wb_icache_sel_o; // byte enable
    logic   [9:0]                     wb_icache_bl_o;  // Burst Length
+   logic                             wb_icache_bry_o; // Burst Length
 
    logic   [YCR1_WB_WIDTH-1:0]       wb_icache_dat_i; // data input
    logic                             wb_icache_ack_i; // acknowlegement
    logic                             wb_icache_lack_i;// last acknowlegement
    logic                             wb_icache_err_i;  // error
+`endif
+
+`ifdef YCR1_DCACHE_EN
+   // Wishbone ICACHE I/F
+   logic                             wb_dcache_cyc_o; // strobe/request
+   logic                             wb_dcache_stb_o; // strobe/request
+   logic   [YCR1_WB_WIDTH-1:0]       wb_dcache_adr_o; // address
+   logic                             wb_dcache_we_o;  // write
+   logic   [YCR1_WB_WIDTH-1:0]       wb_dcache_dat_o; // data output
+   logic   [3:0]                     wb_dcache_sel_o; // byte enable
+   logic   [9:0]                     wb_dcache_bl_o;  // Burst Length
+   logic                             wb_dcache_bry_o; // Burst Ready
+
+   logic   [YCR1_WB_WIDTH-1:0]       wb_dcache_dat_i; // data input
+   logic                             wb_dcache_ack_i; // acknowlegement
+   logic                             wb_dcache_lack_i;// last acknowlegement
+   logic                             wb_dcache_err_i;  // error
 `endif
 
 `ifdef VERILATOR
@@ -418,11 +437,29 @@ ycr1_top_wb i_top (
     .wb_icache_dat_o                    (wb_icache_dat_o  ), // data output
     .wb_icache_sel_o                    (wb_icache_sel_o  ), // byte enable
     .wb_icache_bl_o                     (wb_icache_bl_o   ),  // Burst Length
+    .wb_icache_bry_o                    (wb_icache_bry_o  ),  // Burst Ready
                                                           
     .wb_icache_dat_i                    (wb_icache_dat_i  ), // data input
     .wb_icache_ack_i                    (wb_icache_ack_i  ), // acknowlegement
     .wb_icache_lack_i                   (wb_icache_lack_i ),// last acknowlegement
     .wb_icache_err_i                    (wb_icache_err_i  ),  // error
+   `endif
+
+   `ifdef YCR1_DCACHE_EN
+   // Wishbone DCACHE I/F
+    .wb_dcache_cyc_o                    (wb_dcache_cyc_o  ), // strobe/request
+    .wb_dcache_stb_o                    (wb_dcache_stb_o  ), // strobe/request
+    .wb_dcache_adr_o                    (wb_dcache_adr_o  ), // address
+    .wb_dcache_we_o                     (wb_dcache_we_o   ), // write
+    .wb_dcache_dat_o                    (wb_dcache_dat_o  ), // data output
+    .wb_dcache_sel_o                    (wb_dcache_sel_o  ), // byte enable
+    .wb_dcache_bl_o                     (wb_dcache_bl_o   ), // Burst Length
+    .wb_dcache_bry_o                    (wb_dcache_bry_o   ), // Burst Ready
+                                                          
+    .wb_dcache_dat_i                    (wb_dcache_dat_i  ), // data input
+    .wb_dcache_ack_i                    (wb_dcache_ack_i  ), // acknowlegement
+    .wb_dcache_lack_i                   (wb_dcache_lack_i ),// last acknowlegement
+    .wb_dcache_err_i                    (wb_dcache_err_i  ),  // error
    `endif
 
     .wbd_imem_stb_o         (wbd_imem_stb_o         ),
@@ -450,7 +487,7 @@ ycr1_top_wb i_top (
 //-------------------------------------------------------------------------------
 ycr1_memory_tb_wb #(
     .YCR1_MEM_POWER_SIZE    ($clog2(YCR1_MEM_SIZE))
-) i_memory_tb (
+) i_imem_tb (
     // Control
     .rst_n                  (rst_n                  ),
     .clk                    (clk                    ),
@@ -471,6 +508,7 @@ ycr1_memory_tb_wb #(
     .wbd_imem_dat_i         (wb_icache_dat_o       ),
     .wbd_imem_sel_i         (wb_icache_sel_o       ),
     .wbd_imem_bl_i          (wb_icache_bl_o        ),
+    .wbd_imem_bry_i         (wb_icache_bry_o        ),
     .wbd_imem_dat_o         (wb_icache_dat_i       ),
     .wbd_imem_ack_o         (wb_icache_ack_i       ),
     .wbd_imem_lack_o        (wb_icache_lack_i      ),
@@ -485,6 +523,7 @@ ycr1_memory_tb_wb #(
     .wbd_imem_dat_i         (wbd_imem_dat_o         ),
     .wbd_imem_sel_i         (wbd_imem_sel_o         ),
     .wbd_imem_bl_i          (10'h1                  ),
+    .wbd_imem_bry_i         (1'b1                   ),
     .wbd_imem_dat_o         (wbd_imem_dat_i         ),
     .wbd_imem_ack_o         (wbd_imem_ack_i         ),
     .wbd_imem_lack_o        (                       ),
@@ -503,6 +542,33 @@ ycr1_memory_tb_wb #(
 
 );
 
+
+// dcache application memory
+`ifdef YCR1_DCACHE_EN
+ycr1_dmem_tb_wb #(
+    .YCR1_MEM_POWER_SIZE    ($clog2(YCR1_MEM_SIZE))
+) i_dmem_tb (
+    // Control
+    .rst_n                  (rst_n                 ),
+    .clk                    (clk                   ),
+    .mem_req_ack_stall_in   (dmem_req_ack_stall    ),
+
+
+    .wbd_mem_stb_i          (wb_dcache_stb_o       ),
+    .wbd_mem_adr_i          (wb_dcache_adr_o       ),
+    .wbd_mem_we_i           (wb_dcache_we_o        ),
+    .wbd_mem_dat_i          (wb_dcache_dat_o       ),
+    .wbd_mem_sel_i          (wb_dcache_sel_o       ),
+    .wbd_mem_bl_i           (wb_dcache_bl_o        ),
+    .wbd_mem_bry_i          (wb_dcache_bry_o       ),
+    .wbd_mem_dat_o          (wb_dcache_dat_i       ),
+    .wbd_mem_ack_o          (wb_dcache_ack_i       ),
+    .wbd_mem_lack_o         (wb_dcache_lack_i      ),
+    .wbd_mem_err_o          (wb_dcache_err_i       )
+
+
+);
+`endif
 
 wire  dmem_req =  i_top.core_dmem_req & i_top.core_dmem_req_ack;
 

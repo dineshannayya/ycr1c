@@ -49,9 +49,13 @@
 ////      - Dinesh Annayya, dinesha@opencores.org                         ////
 ////                                                                      ////
 ////  Revision :                                                          ////
-////     v0:    Jan 2021- Initial version picked from syntacore/scr1      ////
-////     v1:    June 7, 2021, Dinesh A                                    ////
+////     0.0:    Jan 2021- Initial version picked from syntacore/scr1     ////
+////     0.1:    June 7, 2021, Dinesh A                                   ////
 ////             opentool(iverilog/yosys) related cleanup                 ////
+////     0.2:    Jan 22, 2022, Dinesh A                                   ////
+////             Bug fix: Do avoid abort imem request removal, we have    ////
+////             qualified it with imem_resp_discard_cnt_upd              ////
+////                                                                      ////
 ////                                                                      ////
 //////////////////////////////////////////////////////////////////////////////
 
@@ -634,7 +638,8 @@ assign ifu2imem_addr_o = exu2ifu_pc_new_req_i
                        ? {exu2ifu_pc_new_i[`YCR1_XLEN-1:2], 2'b00}
                        : {imem_addr_ff, 2'b00};
 `else // YCR1_NEW_PC_REG
-assign ifu2imem_req_o  = ifu_fsm_fetch & ~imem_pnd_txns_q_full & q_has_free_slots;
+// Bug fix: Do avoid abort request removal, we have qualified it with imem_resp_discard_cnt_upd
+assign ifu2imem_req_o  = ifu_fsm_fetch & ~imem_pnd_txns_q_full & q_has_free_slots &  (!imem_resp_discard_cnt_upd);
 assign ifu2imem_addr_o = {imem_addr_ff, 2'b00};
 `endif // YCR1_NEW_PC_REG
 

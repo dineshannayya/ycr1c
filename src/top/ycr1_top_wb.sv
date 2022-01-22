@@ -31,6 +31,12 @@
 ////  Author(s):                                                          ////
 ////      - Dinesh Annayya, dinesha@opencores.org                         ////
 ////                                                                      ////
+////  CPU Memory Map:                                                     ////
+////            0x0000_0000 to 0x07FF_FFFF (128MB) - ICACHE               ////
+////            0x0800_0000 to 0x0BFF_FFFF (64MB)  - DCACHE               ////
+////            0x0C48_0000 to 0x0C48_FFFF (64K)   - TCM SRAM             ////
+////            0x0C49_0000 to 0x0C49_000F (16)    - TIMER                ////
+////                                                                      ////
 ////  Revision :                                                          ////
 ////     0.0:    June 7, 2021, Dinesh A                                   ////
 ////             wishbone integration                                     ////
@@ -44,6 +50,9 @@
 ////     1.0:   Jan 20, 2022, Dinesh A                                    ////
 ////            128MB icache integrated in address range 0x0000_0000 to   ////
 ////            0x07FF_FFFF                                               ////
+////     1.1:   Jan 22, 2022, Dinesh A                                    ////
+////            64MB dcache added in the address range 0x0800_0000 to     ////
+////            0x0BFF_FFFF                                               ////
 ////                                                                      ////
 //////////////////////////////////////////////////////////////////////////////
 
@@ -154,11 +163,29 @@ module ycr1_top_wb (
    output logic   [YCR1_WB_WIDTH-1:0]       wb_icache_dat_o, // data output
    output logic   [3:0]                     wb_icache_sel_o, // byte enable
    output logic   [9:0]                     wb_icache_bl_o,  // Burst Length
+   output logic                             wb_icache_bry_o, // Burst Ready 
 
    input logic   [YCR1_WB_WIDTH-1:0]        wb_icache_dat_i, // data input
    input logic                              wb_icache_ack_i, // acknowlegement
    input logic                              wb_icache_lack_i,// last acknowlegement
    input logic                              wb_icache_err_i,  // error
+   `endif
+
+   `ifdef YCR1_DCACHE_EN
+   // Wishbone ICACHE I/F
+   output logic                             wb_dcache_cyc_o, // strobe/request
+   output logic                             wb_dcache_stb_o, // strobe/request
+   output logic   [YCR1_WB_WIDTH-1:0]       wb_dcache_adr_o, // address
+   output logic                             wb_dcache_we_o,  // write
+   output logic   [YCR1_WB_WIDTH-1:0]       wb_dcache_dat_o, // data output
+   output logic   [3:0]                     wb_dcache_sel_o, // byte enable
+   output logic   [9:0]                     wb_dcache_bl_o,  // Burst Length
+   output logic                             wb_dcache_bry_o, // Burst Ready
+
+   input logic   [YCR1_WB_WIDTH-1:0]        wb_dcache_dat_i, // data input
+   input logic                              wb_dcache_ack_i, // acknowlegement
+   input logic                              wb_dcache_lack_i,// last acknowlegement
+   input logic                              wb_dcache_err_i,  // error
    `endif
 
     // Instruction Memory Interface
@@ -362,12 +389,30 @@ ycr1_intf u_intf (
     .wb_icache_we_o                     (wb_icache_we_o   ), // write
     .wb_icache_dat_o                    (wb_icache_dat_o  ), // data output
     .wb_icache_sel_o                    (wb_icache_sel_o  ), // byte enable
-    .wb_icache_bl_o                     (wb_icache_bl_o   ),  // Burst Length
+    .wb_icache_bl_o                     (wb_icache_bl_o   ), // Burst Length
+    .wb_icache_bry_o                    (wb_icache_bry_o  ), // Burst Ready
                                                           
     .wb_icache_dat_i                    (wb_icache_dat_i  ), // data input
     .wb_icache_ack_i                    (wb_icache_ack_i  ), // acknowlegement
     .wb_icache_lack_i                   (wb_icache_lack_i ),// last acknowlegement
     .wb_icache_err_i                    (wb_icache_err_i  ),  // error
+   `endif
+
+   `ifdef YCR1_DCACHE_EN
+   // Wishbone DCACHE I/F
+    .wb_dcache_cyc_o                    (wb_dcache_cyc_o  ), // strobe/request
+    .wb_dcache_stb_o                    (wb_dcache_stb_o  ), // strobe/request
+    .wb_dcache_adr_o                    (wb_dcache_adr_o  ), // address
+    .wb_dcache_we_o                     (wb_dcache_we_o   ), // write
+    .wb_dcache_dat_o                    (wb_dcache_dat_o  ), // data output
+    .wb_dcache_sel_o                    (wb_dcache_sel_o  ), // byte enable
+    .wb_dcache_bl_o                     (wb_dcache_bl_o   ),  // Burst Length
+    .wb_dcache_bry_o                    (wb_dcache_bry_o  ),  // Burst Ready
+                                                          
+    .wb_dcache_dat_i                    (wb_dcache_dat_i  ), // data input
+    .wb_dcache_ack_i                    (wb_dcache_ack_i  ), // acknowlegement
+    .wb_dcache_lack_i                   (wb_dcache_lack_i ),// last acknowlegement
+    .wb_dcache_err_i                    (wb_dcache_err_i  ),  // error
    `endif
     // Common
     .pwrup_rst_n_sync                   (pwrup_rst_n_sync),   // Power-Up reset

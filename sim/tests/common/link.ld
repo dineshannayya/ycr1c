@@ -25,8 +25,9 @@ OUTPUT_ARCH( "riscv" )
 ENTRY(_start)
 
 MEMORY {
-  RAM (rwx) : ORIGIN = 0x0, LENGTH = 64K
-  TCM (rwx) : ORIGIN = 0x08480000, LENGTH = 4K
+  ROM (rxx) : ORIGIN = 0x0, LENGTH = 64K
+  RAM (rwx) : ORIGIN = 0x08000000, LENGTH = 64K
+  TCM (rwx) : ORIGIN = 0x0C480000, LENGTH = 4K
 }
 
 STACK_SIZE = 1024;
@@ -47,7 +48,7 @@ SECTIONS {
     . = 0x100;
     PROVIDE(__TEXT_START__ = .);
     *(.text.init) 
-  } >RAM
+  } >ROM
 
   .text  : {
     *crt.o(.text .text.*)
@@ -55,7 +56,7 @@ SECTIONS {
     *(sc_test_section)
     . = ALIGN(CL_SIZE);
      PROVIDE(__TEXT_END__ = .);
-  } >RAM 
+  } >ROM
 
   /* data segment */
   .data : {
@@ -90,7 +91,7 @@ SECTIONS {
   .sbss : {
     *(.sbss .sbss.* .gnu.linkonce.sb.*)
     *(.scommon)
-  } >TCM
+  } >RAM
 
   .bss : {
     *(.bss .bss.*)

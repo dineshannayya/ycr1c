@@ -42,6 +42,7 @@
      `include "top/ycr1_intf.sv"
      `include "top/ycr1_imem_router.sv"
      `include "top/ycr1_icache_router.sv"
+     `include "top/ycr1_dcache_router.sv"
      `include "lib/ycr1_async_wbb.sv"
      `include "lib/ycr1_arb.sv"
      `include "lib/sync_fifo.sv"
@@ -51,5 +52,6 @@
      `include "cache/src/core/icache_top.sv"
      `include "cache/src/core/icache_app_fsm.sv"
      `include "cache/src/core/icache_tag_fifo.sv"
-
+     `include "cache/src/core/dcache_tag_fifo.sv"
+     `include "cache/src/core/dcache_top.sv"
 `endif

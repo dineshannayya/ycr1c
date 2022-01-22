@@ -54,6 +54,7 @@ end
            $display("RISCV-DEBUG => DMEM ADDRESS: %x READ Data : %x Resonse: %x", core2dmem_addr_o_r,`RISC_CORE.dmem2core_rdata_i,`RISC_CORE.dmem2core_resp_i);
  end
 **/
+/***
   logic [31:0] test_count;
  `define RISC_CORE  i_top.i_core_top
  `define RISC_EXU  i_top.i_core_top.i_pipe_top.i_pipe_exu
@@ -71,6 +72,7 @@ end
              test_count <= test_count+1;
 	  end
  end
+ ***/
 
 `ifdef GL
 //  wire [31:0] func_return_val = {i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][31],
@@ -114,6 +116,7 @@ end
 always_ff @(posedge clk) begin
     bit test_pass;
     int unsigned                            f_test;
+    int unsigned                            f_test_ram;
     if (test_running) begin
         test_pass = 1;
         rst_init <= 1'b0;
@@ -186,7 +189,7 @@ always_ff @(posedge clk) begin
 `endif
                     fd = $fopen(tmpstr, "w");
                     while ((start != stop)) begin
-                        test_data = {i_memory_tb.memory[start+3], i_memory_tb.memory[start+2], i_memory_tb.memory[start+1], i_memory_tb.memory[start]};
+                        test_data = {i_dmem_tb.memory[start+3], i_dmem_tb.memory[start+2], i_dmem_tb.memory[start+1], i_dmem_tb.memory[start]};
                         //test_data[31:24] = u_tsram0_2kb.mem[(start & 32'h1FFF)+3];
                         //test_data[23:16] = u_tsram0_2kb.mem[(start & 32'h1FFF)+2];
                         //test_data[15:8]  = u_tsram0_2kb.mem[(start & 32'h1FFF)+1];
@@ -216,7 +219,7 @@ always_ff @(posedge clk) begin
 		        //$writememh("sram0_out.hex",u_tsram0_2kb.mem,0,511);
                        // test_data = u_tsram0_2kb.mem[((start >> 2) & 32'h1FFF)];
 			//$display("Compare Addr: %x ref_data : %x, test_data: %x",start,ref_data,test_data);
-                        test_data = {i_memory_tb.memory[start+3], i_memory_tb.memory[start+2], i_memory_tb.memory[start+1], i_memory_tb.memory[start]};
+                        test_data = {i_dmem_tb.memory[start+3], i_dmem_tb.memory[start+2], i_dmem_tb.memory[start+1], i_dmem_tb.memory[start]};
                         test_pass &= (ref_data == test_data);
 			if(ref_data != test_data)
 			   $display("ERROR: Compare Addr: %x Mem Addr: %x ref_data : %x, test_data: %x",start,start & 32'h1FFF,ref_data,test_data);
@@ -261,6 +264,7 @@ always_ff @(posedge clk) begin
 `else // VERILATOR
         if (!$feof(f_info)) begin
             $fscanf(f_info, "%s\n", test_file);
+	    $sformat(test_ram_file, "%s.ram",test_file);
 `endif // VERILATOR
             f_test = $fopen(test_file,"r");
             if (f_test != 0) begin
@@ -268,8 +272,20 @@ always_ff @(posedge clk) begin
                 `ifdef YCR1_TRACE_LOG_EN
                     i_top.i_core_top.i_pipe_top.i_tracelog.test_name = test_file;
                 `endif // YCR1_TRACE_LOG_EN
-                i_memory_tb.test_file = test_file;
-                i_memory_tb.test_file_init = 1'b1;
+                //i_imem_tb.test_file = test_file;
+                //i_imem_tb.test_file_init = 1'b1;
+                $readmemh(test_file, i_imem_tb.memory);
+	        $display("i_imem_tb: Loading Memory file: %s",test_file);
+           
+	        // If <test>.hex.ram file available	
+		f_test_ram = $fopen(test_ram_file,"r");
+                if (f_test_ram != 0) begin
+                   //i_dmem_tb.test_file = test_ram_file;
+                   //i_dmem_tb.test_file_init = 1'b1;
+                   $readmemh(test_ram_file, i_dmem_tb.memory);
+	           $display("i_dmem_tb: Loading Memory file: %s",test_ram_file);
+		end
+
                 `ifndef SIGNATURE_OUT
                     $write("\033[0;34m---Test: %s\033[0m\n", test_file);
                 `endif //SIGNATURE_OUT

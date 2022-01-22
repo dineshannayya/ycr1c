@@ -136,7 +136,8 @@ export RISCV_OBJDUMP ?= $(CROSS_PREFIX)objdump -D
 export RISCV_OBJCOPY ?= $(CROSS_PREFIX)objcopy -O verilog
 export RISCV_ROM_OBJCOPY ?= $(CROSS_PREFIX)objcopy -j .text.init -j .text -j .rodata -j .rodata.str1.4 -O verilog
 #Seperate the RAM content and write out in 32bit Little endian format to load it to TCM Memory
-export RISCV_RAM_OBJCOPY ?= $(CROSS_PREFIX)objcopy -R .text.init -R .text -R .rodata -R .rodata.str1.4 -R .riscv.attributes -R .comment -R .debug_abbrev -R .debug_loc -R .debug_str -O verilog --verilog-data-width=4 --reverse-bytes=4
+#export RISCV_RAM_OBJCOPY ?= $(CROSS_PREFIX)objcopy -R .text.init -R .text -R .rodata -R .rodata.str1.4 -R .riscv.attributes -R .comment -R .debug_abbrev -R .debug_loc -R .debug_str -O verilog --verilog-data-width=4 --reverse-bytes=4
+export RISCV_RAM_OBJCOPY ?= $(CROSS_PREFIX)objcopy -R .text.init -R .text -R .rodata -R .rodata.str1.4 -O verilog 
 export RISCV_READELF ?= $(CROSS_PREFIX)readelf -s
 #--
 ifneq (,$(findstring axi,$(BUS_lowercase)))

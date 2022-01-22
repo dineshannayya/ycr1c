@@ -48,7 +48,9 @@ module ycr1_dmem_router
     parameter YCR1_PORT2_ADDR_MASK      = `YCR1_DMEM_AWIDTH'hFFFF0000,
     parameter YCR1_PORT2_ADDR_PATTERN   = `YCR1_DMEM_AWIDTH'h00020000,
     parameter YCR1_PORT3_ADDR_MASK      = `YCR1_DMEM_AWIDTH'hFFFF0000,
-    parameter YCR1_PORT3_ADDR_PATTERN   = `YCR1_DMEM_AWIDTH'h00020000
+    parameter YCR1_PORT3_ADDR_PATTERN   = `YCR1_DMEM_AWIDTH'h00020000,
+    parameter YCR1_PORT4_ADDR_MASK      = `YCR1_DMEM_AWIDTH'hFFFF0000,
+    parameter YCR1_PORT4_ADDR_PATTERN   = `YCR1_DMEM_AWIDTH'h00020000
 )
 (
     // Control signals
@@ -94,7 +96,7 @@ module ycr1_dmem_router
     output  logic [`YCR1_DMEM_DWIDTH-1:0]   port2_wdata,
     input   logic [`YCR1_DMEM_DWIDTH-1:0]   port2_rdata,
     input   logic [1:0]                     port2_resp,
-
+    
     // PORT3 interface
     input   logic                           port3_req_ack,
     output  logic                           port3_req,
@@ -103,7 +105,17 @@ module ycr1_dmem_router
     output  logic [`YCR1_DMEM_AWIDTH-1:0]   port3_addr,
     output  logic [`YCR1_DMEM_DWIDTH-1:0]   port3_wdata,
     input   logic [`YCR1_DMEM_DWIDTH-1:0]   port3_rdata,
-    input   logic [1:0]                     port3_resp
+    input   logic [1:0]                     port3_resp,
+
+    // PORT4 interface
+    input   logic                           port4_req_ack,
+    output  logic                           port4_req,
+    output  logic                           port4_cmd,
+    output  logic [1:0]                     port4_width,
+    output  logic [`YCR1_DMEM_AWIDTH-1:0]   port4_addr,
+    output  logic [`YCR1_DMEM_DWIDTH-1:0]   port4_wdata,
+    input   logic [`YCR1_DMEM_DWIDTH-1:0]   port4_rdata,
+    input   logic [1:0]                     port4_resp
 );
 
 //-------------------------------------------------------------------------------
@@ -114,11 +126,12 @@ typedef enum logic {
     YCR1_FSM_DATA
 } type_ycr1_fsm_e;
 
-typedef enum logic [1:0] {
+typedef enum logic [2:0] {
     YCR1_SEL_PORT0,
     YCR1_SEL_PORT1,
     YCR1_SEL_PORT2,
-    YCR1_SEL_PORT3
+    YCR1_SEL_PORT3,
+    YCR1_SEL_PORT4
 } type_ycr1_sel_e;
 
 //-------------------------------------------------------------------------------
@@ -142,6 +155,8 @@ always_comb begin
         port_sel    = YCR1_SEL_PORT2;
     end else if ((dmem_addr & YCR1_PORT3_ADDR_MASK) == YCR1_PORT3_ADDR_PATTERN) begin
         port_sel    = YCR1_SEL_PORT3;
+    end else if ((dmem_addr & YCR1_PORT4_ADDR_MASK) == YCR1_PORT4_ADDR_PATTERN) begin
+        port_sel    = YCR1_SEL_PORT4;
     end
 end
 
@@ -187,6 +202,7 @@ always_comb begin
             YCR1_SEL_PORT1  : sel_req_ack   = port1_req_ack;
             YCR1_SEL_PORT2  : sel_req_ack   = port2_req_ack;
             YCR1_SEL_PORT3  : sel_req_ack   = port3_req_ack;
+            YCR1_SEL_PORT4  : sel_req_ack   = port4_req_ack;
             default         : sel_req_ack   = 1'b0;
         endcase
     end else begin
@@ -211,6 +227,10 @@ always_comb begin
         YCR1_SEL_PORT3  : begin
             sel_rdata   = port3_rdata;
             sel_resp    = port3_resp;
+        end
+        YCR1_SEL_PORT4  : begin
+            sel_rdata   = port4_rdata;
+            sel_resp    = port4_resp;
         end
         default         : begin
             sel_rdata   = '0;
@@ -350,6 +370,36 @@ assign port3_addr   = dmem_addr ;
 assign port3_wdata  = dmem_wdata;
 `endif // YCR1_XPROP_EN
 
+//-------------------------------------------------------------------------------
+// Interface to PORT4
+//-------------------------------------------------------------------------------
+always_comb begin
+    port4_req = 1'b0;
+    case (fsm)
+        YCR1_FSM_ADDR : begin
+            port4_req = dmem_req & (port_sel == YCR1_SEL_PORT4);
+        end
+        YCR1_FSM_DATA : begin
+            if (sel_resp == YCR1_MEM_RESP_RDY_OK) begin
+                port4_req = dmem_req & (port_sel == YCR1_SEL_PORT4);
+            end
+        end
+        default : begin
+        end
+    endcase
+end
+
+`ifdef YCR1_XPROP_EN
+assign port4_cmd    = (port_sel == YCR1_SEL_PORT4) ? dmem_cmd   : YCR1_MEM_CMD_ERROR;
+assign port4_width  = (port_sel == YCR1_SEL_PORT4) ? dmem_width : YCR1_MEM_WIDTH_ERROR;
+assign port4_addr   = (port_sel == YCR1_SEL_PORT4) ? dmem_addr  : 'x;
+assign port4_wdata  = (port_sel == YCR1_SEL_PORT4) ? dmem_wdata : 'x;
+`else // YCR1_XPROP_EN
+assign port4_cmd    = dmem_cmd  ;
+assign port4_width  = dmem_width;
+assign port4_addr   = dmem_addr ;
+assign port4_wdata  = dmem_wdata;
+`endif // YCR1_XPROP_EN
 
 `ifdef YCR1_TRGT_SIMULATION
 //-------------------------------------------------------------------------------

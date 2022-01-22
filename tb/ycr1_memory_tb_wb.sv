@@ -33,6 +33,7 @@ module ycr1_memory_tb_wb #(
     input  logic [31:0]                             wbd_imem_dat_i         ,
     input  logic [3:0]                              wbd_imem_sel_i         ,
     input  logic [9:0]                              wbd_imem_bl_i          ,
+    input  logic                                    wbd_imem_bry_i         ,
     output logic [31:0]                             wbd_imem_dat_o         ,
     output logic                                    wbd_imem_ack_o         ,
     output logic                                    wbd_imem_lack_o        ,
@@ -209,7 +210,7 @@ always @(negedge rst_n, posedge clk) begin
 	    imem_bl_cnt    = 10'h1;
 	    imem_ptr       =  {wbd_imem_adr_i[YCR1_WB_WIDTH-1:2], 2'b00};
 	end
-        if (wbd_imem_stb_i && wbd_imem_we_i == 1'b0 && imem_req_ack_i && !wbd_imem_lack_o) begin // IMEM has only Read access
+        if (wbd_imem_stb_i && wbd_imem_we_i == 1'b0 && imem_req_ack_i && wbd_imem_bry_i && !wbd_imem_lack_o) begin // IMEM has only Read access
              if(mirage_rangeen & wbd_imem_adr_i>=mirage_adrlo & wbd_imem_adr_i<mirage_adrhi)
                  wbd_imem_dat_o = ycr1_read_mem(imem_ptr, wbd_imem_sel_i, imem_wr_hazard, wbd_dmem_dat_i, 1'b1);
              else
@@ -274,7 +275,8 @@ always @(negedge rst_n, posedge clk) begin
 `else // YCR1_IPIC_EN
         ext_irq_reg    = '0;
 `endif // YCR1_IPIC_EN
-        if (test_file_init) $readmemh(test_file, memory);
+     // Memory init moved to test bench
+     // if (test_file_init) $readmemh(test_file, memory);
     end else begin
 	wbd_dmem_stb_l   = wbd_dmem_stb_i;
 	if(wbd_dmem_stb_pedge) begin

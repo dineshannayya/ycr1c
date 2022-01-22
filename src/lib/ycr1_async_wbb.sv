@@ -102,7 +102,8 @@ module ycr1_async_wbb
        output  logic               wbs_we_o    ,  // write
        output  logic [DW-1:0]      wbs_dat_o   ,  // data output
        output  logic [BW-1:0]      wbs_sel_o   ,  // byte enable
-       output  logic [BL-1:0]      wbs_bl_o   ,   // Burst Count
+       output  logic [BL-1:0]      wbs_bl_o    ,  // Burst Count
+       output  logic               wbs_bry_o   ,  // Busrt WData Avialble Or Ready To accept Rdata  
        input   logic [DW-1:0]      wbs_dat_i   ,  // data input
        input   logic               wbs_ack_i   ,  // acknowlegement
        input   logic               wbs_lack_i  ,  // Last Ack
@@ -150,11 +151,8 @@ begin
 end
 
 
-// Master Read Interface
-// For Write is feed through, if there is space in fifo the ack
-// For Read, Wait for Response Path FIFO status
-assign wbm_ack_o = (wbm_stb_i && wbm_we_i)    ?  m_cmd_wr_en : // Write Logic
-	           (wbm_stb_i && (!wbm_we_i)) ? !m_resp_rd_empty : 1'b0; // Read Logic
+// Response Path
+assign wbm_ack_o = (wbm_stb_i && (!wbm_we_i)) ? !m_resp_rd_empty : 1'b0; // Read Logic
 
 assign m_resp_rd_en   = !m_resp_rd_empty;
 assign wbm_dat_o      = m_resp_rd_data[DW-1:0];
@@ -175,14 +173,25 @@ logic [RFW-1:0] s_resp_wr_data      ;
 logic        s_resp_wr_full      ;
 logic        s_resp_wr_afull     ;
 logic        wbs_ack_f          ;
+logic        wbs_stb_l          ;
+logic        wbs_burst          ;
+
+wire wbs_stb_pedge = (wbs_stb_l == 1'b0) && wbs_stb_o;
 
 
 always@(negedge wbs_rst_n or posedge wbs_clk_i)
 begin
    if(wbs_rst_n == 0) begin
       wbs_ack_f <= 1'b0;
+      wbs_stb_l <= 1'b0;
+      wbs_burst <= 'h0;
    end else begin
       wbs_ack_f <= wbs_lack_i;
+      wbs_stb_l <= wbs_stb_o;
+      if(wbs_stb_pedge && wbs_bl_o > 'h1)
+         wbs_burst <= 1'b1;
+      else if(wbs_lack_i)
+         wbs_burst <= 1'b0;
    end
 end
 
@@ -191,14 +200,27 @@ end
 assign {wbs_adr_o,wbs_we_o,wbs_dat_o,wbs_sel_o,wbs_bl_o} = (s_cmd_rd_empty) ? '0:  s_cmd_rd_data;
 // All the downstream logic expect Stobe is getting de-asserted 
 // atleast for 1 cycle after ack is generated
-assign wbs_stb_o = (wbs_ack_f) ? 1'b0 : (s_cmd_rd_empty) ? 1'b0: 1'b1;
-assign wbs_cyc_o = (wbs_ack_f) ? 1'b0 : (s_cmd_rd_empty) ? 1'b0: 1'b1;
+// In Burst Mode, Keep the stb high untill lack received
+assign wbs_stb_o = (wbs_ack_f) ? 1'b0 : (wbs_burst) ? 1'b1 : ((s_cmd_rd_empty) ? 1'b0: 1'b1);
+assign wbs_cyc_o = (wbs_ack_f) ? 1'b0 : (wbs_burst) ? 1'b1 : ((s_cmd_rd_empty) ? 1'b0: 1'b1);
 
-assign s_cmd_rd_en = wbs_lack_i;
+// Generate bust ready only we have space inside response fifo
+// In Write Phase, 
+//      Generate burst ready, only when we have wdata & space in response fifo 
+// In Read Phase 
+//      Generate burst ready, only when space in response fifo 
+//
+assign wbs_bry_o = (wbs_we_o) ? ((s_cmd_rd_empty || s_resp_wr_afull || s_resp_wr_full ) ? 1'b0: 1'b1) :
+	                         (s_resp_wr_afull || s_resp_wr_full ) ? 1'b0: 1'b1;
+
+// During Write phase, cmd fifo will have wdata, so dequeue for every ack
+// During Read Phase, cmd fifo will be written only one time, hold the bus
+// untill last ack received
+assign s_cmd_rd_en = (wbs_stb_o && wbs_we_o) ? wbs_ack_i: wbs_lack_i;
 
 // Write Interface
 // response send only for read logic
-assign s_resp_wr_en   = wbs_stb_o & (!wbs_we_o) & wbs_ack_i & !s_resp_wr_full;
+assign s_resp_wr_en   = wbs_stb_o & wbs_ack_i & !s_resp_wr_full;
 assign s_resp_wr_data = {wbs_err_i,wbs_lack_i,wbs_dat_i};
 
 async_fifo #(.W(CFW), .DP(4), .WR_FAST(1), .RD_FAST(1)) u_cmd_if (
@@ -223,7 +245,7 @@ async_fifo #(.W(CFW), .DP(4), .WR_FAST(1), .RD_FAST(1)) u_cmd_if (
 // Response used only for read path, 
 // As cache access will be busrt of 512 location, To 
 // support continous ack, depth is increase to 8 location
-async_fifo #(.W(RFW), .DP(8), .WR_FAST(1), .RD_FAST(1)) u_resp_if (
+async_fifo #(.W(RFW), .DP(4), .WR_FAST(1), .RD_FAST(1)) u_resp_if (
 	           // Sync w.r.t WR clock
 	           .wr_clk        (wbs_clk_i          ),
                    .wr_reset_n    (wbs_rst_n          ),

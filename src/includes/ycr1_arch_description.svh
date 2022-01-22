@@ -102,6 +102,7 @@
 // If all defines are commented, custom configuration will be used (see below)
 
 `define YCR1_ICACHE_EN   // Enable ICACHE
+`define YCR1_DCACHE_EN   // Enable ICACHE
 
 //------------------------------------------------------------------------------
 // READ-ONLY: settings for recommended configurations
@@ -121,6 +122,8 @@
   `define YCR1_IPIC_EN                // enable Integrated Programmable Interrupt Controller
   `define YCR1_IPIC_SYNC_EN           // enable IPIC synchronizer
   `define YCR1_TCM_EN
+  `define SCR1_TCM_MEM
+  `define YCR1_IMEM_ROUTER_EN
   `define YCR1_NEW_PC_REG             // enable register in IFU for New_PC value
   `define YCRC1_MPRF_STAGE            // enabled register at Read path of MPRF
 `elsif  YCR1_CFG_RV32IC_BASE
@@ -218,11 +221,11 @@ parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_ICACHE_ADDR_PATTERN    = 'h00000000
 parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_DCACHE_ADDR_MASK       = 'hFC000000;       // DCACHE mask and size; size in bytes is two's complement of the mask value
 parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_DCACHE_ADDR_PATTERN    = 'h08000000;       // DCACHE address match pattern
 
-parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TCM_ADDR_MASK          = 'hFFF80000;       // TCM mask and size; size in bytes is two's complement of the mask value
-parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TCM_ADDR_PATTERN       = 'h08480000;       // TCM address match pattern
+parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TCM_ADDR_MASK          = 'hFFFF0000;       // TCM mask and size; size in bytes is two's complement of the mask value
+parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TCM_ADDR_PATTERN       = 'h0C480000;       // TCM address match pattern
 
 parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TIMER_ADDR_MASK        = 'hFFFFFFE0;       // Timer mask
-parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TIMER_ADDR_PATTERN     = 'h08490000;       // Timer address match pattern
+parameter bit [`YCR1_DMEM_AWIDTH-1:0]   YCR1_TIMER_ADDR_PATTERN     = 'h0C490000;       // Timer address match pattern
 
 // Device build ID
  `define YCR1_ARCH_BUILD_ID             `YCR1_MIMPID
