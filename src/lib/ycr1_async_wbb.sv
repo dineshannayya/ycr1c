@@ -129,6 +129,8 @@ logic           m_resp_rd_empty    ;
 logic           m_resp_rd_aempty   ;
 logic           m_resp_rd_en       ;
 logic [RFW-1:0] m_resp_rd_data     ;
+logic           wbm_stb_l          ;
+logic [BL-1:0]  wbm_bl_cnt         ;
 
 // Master Write Interface
 
@@ -137,11 +139,26 @@ assign m_cmd_wr_en = (!PendingRd) && wbm_stb_i && !m_cmd_wr_full && !m_cmd_wr_af
 
 assign m_cmd_wr_data = {wbm_adr_i,wbm_we_i,wbm_dat_i,wbm_sel_i,wbm_bl_i};
 
+wire wbm_stb_pedge = (wbm_stb_l == 1'b0) && wbm_stb_i;
+
 always@(negedge wbm_rst_n or posedge wbm_clk_i)
 begin
    if(wbm_rst_n == 0) begin
       PendingRd <= 1'b0;
+      wbm_stb_l <= 1'b0;
+      wbm_bl_cnt <= 'h0;
    end else begin
+      if(wbm_lack_o)  
+	 wbm_stb_l <= 1'b0;
+      else if(m_cmd_wr_en)
+          wbm_stb_l <= wbm_stb_i;
+      if(wbm_stb_pedge)
+	 wbm_bl_cnt <= wbm_bl_i;
+      else if(m_cmd_wr_en)
+	 wbm_bl_cnt <= wbm_bl_cnt-1;
+
+      if(wbm_stb_pedge)
+	wbm_bl_cnt <= wbm_bl_i; 
       if((!PendingRd) && wbm_stb_i && (!wbm_we_i) && m_cmd_wr_en) begin
       PendingRd <= 1'b1;
       end else if(PendingRd && wbm_stb_i && (!wbm_we_i) && wbm_lack_o) begin
@@ -151,12 +168,21 @@ begin
 end
 
 
-// Response Path
-assign wbm_ack_o = (wbm_stb_i && (!wbm_we_i)) ? !m_resp_rd_empty : 1'b0; // Read Logic
+// Master Read Interface
+// For Write is feed through, if there is space in fifo the ack
+// For Read, Wait for Response Path FIFO status
+assign wbm_ack_o  = (wbm_stb_i && wbm_we_i)    ?  m_cmd_wr_en : // Write Logic
+	           (wbm_stb_i && (!wbm_we_i))  ? !m_resp_rd_empty : 1'b0; // Read Logic
+
+// Last ack generation
+// During Write Phase, If Burst Length =1 then generate at first m_cmd_wr_en
+// //       If Burst Is more than 1, wait for wbm_bl_cnt=1
+// During Read Phase, Pass through the Last Ack
+assign wbm_lack_o     = (wbm_stb_i && wbm_we_i) ? ((wbm_bl_i == 'h1) ? m_cmd_wr_en : (wbm_bl_cnt == 'h2) &  m_cmd_wr_en) :
+	                ((!m_resp_rd_empty) ? m_resp_rd_data[RFW-2] : 1'b0);
 
 assign m_resp_rd_en   = !m_resp_rd_empty;
 assign wbm_dat_o      = m_resp_rd_data[DW-1:0];
-assign wbm_lack_o     = (!m_resp_rd_empty) ? m_resp_rd_data[RFW-2] : 1'b0 ;
 assign wbm_err_o      = (!m_resp_rd_empty) ? m_resp_rd_data[RFW-1] : 1'b0;
 
 
@@ -164,7 +190,8 @@ assign wbm_err_o      = (!m_resp_rd_empty) ? m_resp_rd_data[RFW-1] : 1'b0;
 // Slave Interface
 //-------------------------------
 
-logic [CFW-1:0] s_cmd_rd_data      ;
+logic [CFW-1:0] s_cmd_rd_data   ;
+logic [CFW-1:0] s_cmd_rd_data_l ;
 logic        s_cmd_rd_empty     ;
 logic        s_cmd_rd_aempty    ;
 logic        s_cmd_rd_en        ;
@@ -185,9 +212,12 @@ begin
       wbs_ack_f <= 1'b0;
       wbs_stb_l <= 1'b0;
       wbs_burst <= 'h0;
+      s_cmd_rd_data_l <= 'h0;
    end else begin
       wbs_ack_f <= wbs_lack_i;
       wbs_stb_l <= wbs_stb_o;
+      if(s_cmd_rd_en)
+          s_cmd_rd_data_l <= s_cmd_rd_data;
       if(wbs_stb_pedge && wbs_bl_o > 'h1)
          wbs_burst <= 1'b1;
       else if(wbs_lack_i)
@@ -197,12 +227,13 @@ end
 
 
 // Read Interface
-assign {wbs_adr_o,wbs_we_o,wbs_dat_o,wbs_sel_o,wbs_bl_o} = (s_cmd_rd_empty) ? '0:  s_cmd_rd_data;
+
+
+assign {wbs_adr_o,wbs_we_o,wbs_dat_o,wbs_sel_o,wbs_bl_o} = (s_cmd_rd_empty) ? s_cmd_rd_data_l:  s_cmd_rd_data;
 // All the downstream logic expect Stobe is getting de-asserted 
 // atleast for 1 cycle after ack is generated
-// In Burst Mode, Keep the stb high untill lack received
-assign wbs_stb_o = (wbs_ack_f) ? 1'b0 : (wbs_burst) ? 1'b1 : ((s_cmd_rd_empty) ? 1'b0: 1'b1);
-assign wbs_cyc_o = (wbs_ack_f) ? 1'b0 : (wbs_burst) ? 1'b1 : ((s_cmd_rd_empty) ? 1'b0: 1'b1);
+assign wbs_stb_o = (wbs_burst) ? 1'b1 : ((wbs_ack_f) ? 1'b0 : (s_cmd_rd_empty) ? 1'b0: 1'b1);
+assign wbs_cyc_o = (wbs_burst) ? 1'b1 : ((wbs_ack_f) ? 1'b0 : (s_cmd_rd_empty) ? 1'b0: 1'b1);
 
 // Generate bust ready only we have space inside response fifo
 // In Write Phase, 
@@ -210,7 +241,7 @@ assign wbs_cyc_o = (wbs_ack_f) ? 1'b0 : (wbs_burst) ? 1'b1 : ((s_cmd_rd_empty) ?
 // In Read Phase 
 //      Generate burst ready, only when space in response fifo 
 //
-assign wbs_bry_o = (wbs_we_o) ? ((s_cmd_rd_empty || s_resp_wr_afull || s_resp_wr_full ) ? 1'b0: 1'b1) :
+assign wbs_bry_o = (wbs_we_o) ? ((s_cmd_rd_empty || s_cmd_rd_aempty || s_resp_wr_afull || s_resp_wr_full ) ? 1'b0: 1'b1) :
 	                         (s_resp_wr_afull || s_resp_wr_full ) ? 1'b0: 1'b1;
 
 // During Write phase, cmd fifo will have wdata, so dequeue for every ack
@@ -220,7 +251,7 @@ assign s_cmd_rd_en = (wbs_stb_o && wbs_we_o) ? wbs_ack_i: wbs_lack_i;
 
 // Write Interface
 // response send only for read logic
-assign s_resp_wr_en   = wbs_stb_o & wbs_ack_i & !s_resp_wr_full;
+assign s_resp_wr_en   = wbs_stb_o & (!wbs_we_o) & wbs_ack_i & !s_resp_wr_full;
 assign s_resp_wr_data = {wbs_err_i,wbs_lack_i,wbs_dat_i};
 
 async_fifo #(.W(CFW), .DP(4), .WR_FAST(1), .RD_FAST(1)) u_cmd_if (

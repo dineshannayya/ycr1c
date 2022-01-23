@@ -54,7 +54,6 @@ end
            $display("RISCV-DEBUG => DMEM ADDRESS: %x READ Data : %x Resonse: %x", core2dmem_addr_o_r,`RISC_CORE.dmem2core_rdata_i,`RISC_CORE.dmem2core_resp_i);
  end
 **/
-/***
   logic [31:0] test_count;
  `define RISC_CORE  i_top.i_core_top
  `define RISC_EXU  i_top.i_core_top.i_pipe_top.i_pipe_exu
@@ -72,7 +71,6 @@ end
              test_count <= test_count+1;
 	  end
  end
- ***/
 
 `ifdef GL
 //  wire [31:0] func_return_val = {i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][31],
@@ -113,18 +111,19 @@ end
   wire [31:0] func_return_val = i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10];
 `endif
 
-always_ff @(posedge clk) begin
+always @(posedge clk) begin
     bit test_pass;
     int unsigned                            f_test;
     int unsigned                            f_test_ram;
     if (test_running) begin
         test_pass = 1;
         rst_init <= 1'b0;
-	if(i_top.i_core_top.i_pipe_top.i_pipe_exu.exu2pipe_pc_curr_o === 32'hxxxx_xxxx) begin
+	if(i_top.i_core_top.i_pipe_top.i_pipe_exu.pc_curr_ff === 32'hxxxx_xxxx) begin
 	   $display("ERROR: CURRENT PC Counter State is Known");
 	   $finish;
 	end
         if ((i_top.i_core_top.i_pipe_top.i_pipe_exu.exu2pipe_pc_curr_o == YCR1_SIM_EXIT_ADDR) & ~rst_init & &rst_cnt) begin
+
             `ifdef VERILATOR
                 logic [255:0] full_filename;
                 full_filename = test_file;
@@ -134,7 +133,6 @@ always_ff @(posedge clk) begin
             `endif // VERILATOR
 
             if (is_compliance(test_file)) begin
-
                 logic [31:0] tmpv, start, stop, ref_data, test_data;
                 integer fd;
                 `ifdef VERILATOR
@@ -143,6 +141,12 @@ always_ff @(posedge clk) begin
                 string tmpstr;
                 `endif // VERILATOR
 
+	        // Flush the content of dcache for signature validation at app
+	        // memory	
+	        force i_top.u_intf.u_dcache.cfg_force_flush = 1'b1;
+	        wait(i_top.u_intf.u_dcache.force_flush_done == 1'b1);
+	        release i_top.u_intf.u_dcache.cfg_force_flush;
+		$display("STATUS: Checking Complaince Test Status .... ");
                 test_running <= 1'b0;
                 test_pass = 1;
 
@@ -175,6 +179,9 @@ always_ff @(posedge clk) begin
                     stop = tmpv;
                 end
                 $fclose(fd);
+		start = start & 32'h07FF_FFFF;
+	        stop  = stop & 32'h07FF_FFFF;
+		$display("Complaince Signature Start Address: %x End Address:%x",start,stop);
 
 		//if((start & 32'h1FFF) > 512)
 		//	$display("ERROR: Start address is more than 512, Start: %x",start & 32'h1FFF);
@@ -189,6 +196,7 @@ always_ff @(posedge clk) begin
 `endif
                     fd = $fopen(tmpstr, "w");
                     while ((start != stop)) begin
+			$display("Checking Signature at: %x",start);
                         test_data = {i_dmem_tb.memory[start+3], i_dmem_tb.memory[start+2], i_dmem_tb.memory[start+1], i_dmem_tb.memory[start]};
                         //test_data[31:24] = u_tsram0_2kb.mem[(start & 32'h1FFF)+3];
                         //test_data[23:16] = u_tsram0_2kb.mem[(start & 32'h1FFF)+2];
@@ -212,10 +220,6 @@ always_ff @(posedge clk) begin
                     end
                     while (!$feof(fd) && (start != stop)) begin
                         $fscanf(fd, "0x%h,\n", ref_data);
-			//----------------------------------------------------
-			// Assumed all signaure are with-in first 512 location of memory, 
-			// other-wise need to switch bank
-			// --------------------------------------------------
 		        //$writememh("sram0_out.hex",u_tsram0_2kb.mem,0,511);
                        // test_data = u_tsram0_2kb.mem[((start >> 2) & 32'h1FFF)];
 			//$display("Compare Addr: %x ref_data : %x, test_data: %x",start,ref_data,test_data);

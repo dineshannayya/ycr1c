@@ -132,7 +132,7 @@ $(dst_dir)/compliance_%.elf: $(obj_dir)/%.o | $(dep_files)
 $(dst_dir)/compliance_%.hex: $(dst_dir)/compliance_%.elf
 	$(RISCV_ROM_OBJCOPY) $^ $@
 	$(RISCV_RAM_OBJCOPY) $^ $@.ram
-	#assign 0x0048_0xxx  to 0x0000_0xxx to map to TCM Memory
+	#assign 0x0800_0xxx  to 0x0000_0xxx to map to TCM Memory
 	sed -i 's/@08000/@00000/g' $@.ram
 
 $(bld_dir)/compliance_%.dump: $(dst_dir)/compliance_%.elf

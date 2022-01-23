@@ -326,14 +326,14 @@ endfunction
 always @(posedge wr_clk) begin
    if (wr_en && full) begin
       $display($time, "%m Error! afifo overflow!");
-      $stop;
+      //$stop;
    end
 end
 
 always @(posedge rd_clk) begin
    if (rd_en && empty) begin
       $display($time, "%m error! afifo underflow!");
-      $stop;
+      //$stop;
    end
 end
 // synopsys translate_on

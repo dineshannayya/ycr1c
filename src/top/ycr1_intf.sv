@@ -877,6 +877,7 @@ dcache_top  u_dcache (
 	.rst_n                        (core_rst_n_local),  //Active Low Asynchronous Reset Signal Input
 
 	.cfg_pfet_dis                 (1'b0),              // To disable Next Pre data Pre fetch, default = 0
+	.cfg_force_flush              (1'b0),              // Force flush
 
 	// Wishbone CPU I/F
         .cpu_mem_req                 (dcache_req),        // strobe/request
