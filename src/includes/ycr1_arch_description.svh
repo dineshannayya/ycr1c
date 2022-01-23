@@ -122,7 +122,7 @@
   `define YCR1_IPIC_EN                // enable Integrated Programmable Interrupt Controller
   `define YCR1_IPIC_SYNC_EN           // enable IPIC synchronizer
   `define YCR1_TCM_EN
-  `define SCR1_TCM_MEM
+  //`define SCR1_TCM_MEM
   `define YCR1_IMEM_ROUTER_EN
   `define YCR1_NEW_PC_REG             // enable register in IFU for New_PC value
   `define YCRC1_MPRF_STAGE            // enabled register at Read path of MPRF
