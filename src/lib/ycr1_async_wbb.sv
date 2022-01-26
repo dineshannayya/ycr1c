@@ -157,8 +157,6 @@ begin
       else if(m_cmd_wr_en)
 	 wbm_bl_cnt <= wbm_bl_cnt-1;
 
-      if(wbm_stb_pedge)
-	wbm_bl_cnt <= wbm_bl_i; 
       if((!PendingRd) && wbm_stb_i && (!wbm_we_i) && m_cmd_wr_en) begin
       PendingRd <= 1'b1;
       end else if(PendingRd && wbm_stb_i && (!wbm_we_i) && wbm_lack_o) begin
