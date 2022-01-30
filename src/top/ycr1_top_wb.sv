@@ -53,6 +53,9 @@
 ////     1.1:   Jan 22, 2022, Dinesh A                                    ////
 ////            64MB dcache added in the address range 0x0800_0000 to     ////
 ////            0x0BFF_FFFF                                               ////
+////     1.2:   Jan 30, 2022, Dinesh A                                    ////
+////            global register newly added in timer register to control  ////
+////            icache/dcache operation                                   ////
 ////                                                                      ////
 //////////////////////////////////////////////////////////////////////////////
 
@@ -134,20 +137,6 @@ module ycr1_top_wb (
     output  logic  [8:0]                    sram0_addr1,
     input   logic  [31:0]                   sram0_dout1,
 
-    // SRAM-1 PORT-0
-    output  logic                           sram1_clk0,
-    output  logic                           sram1_csb0,
-    output  logic                           sram1_web0,
-    output  logic   [8:0]                   sram1_addr0,
-    output  logic   [3:0]                   sram1_wmask0,
-    output  logic   [31:0]                  sram1_din0,
-    input   logic   [31:0]                  sram1_dout0,
-
-    // SRAM-1 PORT-1
-    output  logic                           sram1_clk1,
-    output  logic                           sram1_csb1,
-    output  logic  [8:0]                    sram1_addr1,
-    input   logic  [31:0]                   sram1_dout1,
 `endif
 
 
@@ -169,6 +158,7 @@ module ycr1_top_wb (
    input logic                              wb_icache_ack_i, // acknowlegement
    input logic                              wb_icache_lack_i,// last acknowlegement
    input logic                              wb_icache_err_i,  // error
+
    `endif
 
    `ifdef YCR1_DCACHE_EN
@@ -186,17 +176,18 @@ module ycr1_top_wb (
    input logic                              wb_dcache_ack_i, // acknowlegement
    input logic                              wb_dcache_lack_i,// last acknowlegement
    input logic                              wb_dcache_err_i,  // error
+
    `endif
 
     // Instruction Memory Interface
-    output  logic                           wbd_imem_stb_o, // strobe/request
-    output  logic   [YCR1_WB_WIDTH-1:0]     wbd_imem_adr_o, // address
-    output  logic                           wbd_imem_we_o,  // write
-    output  logic   [YCR1_WB_WIDTH-1:0]     wbd_imem_dat_o, // data output
-    output  logic   [3:0]                   wbd_imem_sel_o, // byte enable
-    input   logic   [YCR1_WB_WIDTH-1:0]     wbd_imem_dat_i, // data input
-    input   logic                           wbd_imem_ack_i, // acknowlegement
-    input   logic                           wbd_imem_err_i,  // error
+    //output  logic                           wbd_imem_stb_o, // strobe/request
+    //output  logic   [YCR1_WB_WIDTH-1:0]     wbd_imem_adr_o, // address
+    //output  logic                           wbd_imem_we_o,  // write
+    //output  logic   [YCR1_WB_WIDTH-1:0]     wbd_imem_dat_o, // data output
+    //output  logic   [3:0]                   wbd_imem_sel_o, // byte enable
+    //input   logic   [YCR1_WB_WIDTH-1:0]     wbd_imem_dat_i, // data input
+    //input   logic                           wbd_imem_ack_i, // acknowlegement
+    //input   logic                           wbd_imem_err_i,  // error
 
     // Data Memory Interface
     output  logic                           wbd_dmem_stb_o, // strobe/request
@@ -341,35 +332,21 @@ ycr1_intf u_intf (
     .sram0_csb1      (sram0_csb1),
     .sram0_addr1     (sram0_addr1),
     .sram0_dout1     (sram0_dout1),
-    
-    // SRAM-1 PORT-0
-    .sram1_clk0      (sram1_clk0),
-    .sram1_csb0      (sram1_csb0),
-    .sram1_web0      (sram1_web0),
-    .sram1_addr0     (sram1_addr0),
-    .sram1_wmask0    (sram1_wmask0),
-    .sram1_din0      (sram1_din0),
-    .sram1_dout0     (sram1_dout0),
-    
-    // SRAM-1 PORT-1
-    .sram1_clk1      (sram1_clk1),
-    .sram1_csb1      (sram1_csb1),
-    .sram1_addr1     (sram1_addr1),
-    .sram1_dout1     (sram1_dout1),
+ 
 `endif
 
     .wb_rst_n                           (wb_rst_n),           // Wish bone reset
     .wb_clk                             (wb_clk),             // wish bone clock
 
     // Instruction Memory Interface
-    .wbd_imem_stb_o                     (wbd_imem_stb_o),     // strobe/request
-    .wbd_imem_adr_o                     (wbd_imem_adr_o),     // address
-    .wbd_imem_we_o                      (wbd_imem_we_o),      // write
-    .wbd_imem_dat_o                     (wbd_imem_dat_o),     // data output
-    .wbd_imem_sel_o                     (wbd_imem_sel_o),     // byte enable
-    .wbd_imem_dat_i                     (wbd_imem_dat_i),     // data input
-    .wbd_imem_ack_i                     (wbd_imem_ack_i),     // acknowlegement
-    .wbd_imem_err_i                     (wbd_imem_err_i),     // error
+    .wbd_imem_stb_o                     (),         // strobe/request
+    .wbd_imem_adr_o                     (),         // address
+    .wbd_imem_we_o                      (),         // write
+    .wbd_imem_dat_o                     (),         // data output
+    .wbd_imem_sel_o                     (),         // byte enable
+    .wbd_imem_dat_i                     ('h0),      // data input
+    .wbd_imem_ack_i                     (1'b0),     // acknowlegement
+    .wbd_imem_err_i                     (1'b0),     // error
 
     // Data Memory Interface
     .wbd_dmem_stb_o                     (wbd_dmem_stb_o),     // strobe/request
@@ -398,6 +375,7 @@ ycr1_intf u_intf (
     .wb_icache_err_i                    (wb_icache_err_i  ),  // error
    `endif
 
+
    `ifdef YCR1_DCACHE_EN
    // Wishbone DCACHE I/F
     .wb_dcache_cyc_o                    (wb_dcache_cyc_o  ), // strobe/request
@@ -413,6 +391,7 @@ ycr1_intf u_intf (
     .wb_dcache_ack_i                    (wb_dcache_ack_i  ), // acknowlegement
     .wb_dcache_lack_i                   (wb_dcache_lack_i ),// last acknowlegement
     .wb_dcache_err_i                    (wb_dcache_err_i  ),  // error
+
    `endif
     // Common
     .pwrup_rst_n_sync                   (pwrup_rst_n_sync),   // Power-Up reset

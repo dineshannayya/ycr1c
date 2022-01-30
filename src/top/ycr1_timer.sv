@@ -65,7 +65,9 @@ module ycr1_timer (
 
     // Timer interface
     output  logic [63:0]                            timer_val,
-    output  logic                                   timer_irq
+    output  logic                                   timer_irq,
+
+    output  logic [31:0]                            riscv_glbl_cfg
 );
 
 //-------------------------------------------------------------------------------
@@ -78,6 +80,7 @@ localparam logic [YCR1_TIMER_ADDR_WIDTH-1:0] YCR1_TIMER_MTIMELO             = 5'
 localparam logic [YCR1_TIMER_ADDR_WIDTH-1:0] YCR1_TIMER_MTIMEHI             = 5'hC;
 localparam logic [YCR1_TIMER_ADDR_WIDTH-1:0] YCR1_TIMER_MTIMECMPLO          = 5'h10;
 localparam logic [YCR1_TIMER_ADDR_WIDTH-1:0] YCR1_TIMER_MTIMECMPHI          = 5'h14;
+localparam logic [YCR1_TIMER_ADDR_WIDTH-1:0] YCR1_GLBL_CONTROL              = 5'h18;
 
 localparam int unsigned YCR1_TIMER_CONTROL_EN_OFFSET                        = 0;
 localparam int unsigned YCR1_TIMER_CONTROL_CLKSRC_OFFSET                    = 1;
@@ -101,6 +104,7 @@ logic                                               mtimelo_up;
 logic                                               mtimehi_up;
 logic                                               mtimecmplo_up;
 logic                                               mtimecmphi_up;
+logic                                               glbl_cfg_up;
 
 logic                                               dmem_req_valid;
 
@@ -182,7 +186,16 @@ always_ff @(posedge clk, negedge rst_n) begin
         mtimecmp_reg    <= '0;
     end else begin
         if (mtimecmplo_up | mtimecmphi_up) begin
-            mtimecmp_reg    <= mtimecmp_new;
+
+    end
+end
+
+always_ff @(posedge clk, negedge rst_n) begin
+    if (~rst_n) begin
+        riscv_glbl_cfg    <= '0;
+    end else begin
+        if (glbl_cfg_up) begin
+            riscv_glbl_cfg    <= dmem_wdata;
         end
     end
 end
@@ -284,6 +297,7 @@ always_ff @(negedge rst_n, posedge clk) begin
                         YCR1_TIMER_MTIMEHI      : dmem_rdata    <= mtime_reg[63:32];
                         YCR1_TIMER_MTIMECMPLO   : dmem_rdata    <= mtimecmp_reg[31:0];
                         YCR1_TIMER_MTIMECMPHI   : dmem_rdata    <= mtimecmp_reg[63:32];
+                        YCR1_GLBL_CONTROL       : dmem_rdata    <= riscv_glbl_cfg;
                         default                 : begin end
                     endcase
                 end
@@ -301,6 +315,7 @@ always_comb begin
     mtimehi_up      = 1'b0;
     mtimecmplo_up   = 1'b0;
     mtimecmphi_up   = 1'b0;
+    glbl_cfg_up     = 1'b0;
     if (dmem_req_valid & (dmem_cmd_ff == YCR1_MEM_CMD_WR)) begin
         case (dmem_addr_ff)
             YCR1_TIMER_CONTROL      : control_up    = 1'b1;
@@ -309,6 +324,7 @@ always_comb begin
             YCR1_TIMER_MTIMEHI      : mtimehi_up    = 1'b1;
             YCR1_TIMER_MTIMECMPLO   : mtimecmplo_up = 1'b1;
             YCR1_TIMER_MTIMECMPHI   : mtimecmphi_up = 1'b1;
+	    YCR1_GLBL_CONTROL       : glbl_cfg_up   = 1'b1;
             default                 : begin end
         endcase
     end

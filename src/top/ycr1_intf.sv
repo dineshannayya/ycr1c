@@ -79,20 +79,6 @@ module ycr1_intf (
     output  logic  [8:0]                    sram0_addr1,
     input   logic  [31:0]                   sram0_dout1,
 
-    // SRAM-1 PORT-0
-    output  logic                           sram1_clk0,
-    output  logic                           sram1_csb0,
-    output  logic                           sram1_web0,
-    output  logic   [8:0]                   sram1_addr0,
-    output  logic   [3:0]                   sram1_wmask0,
-    output  logic   [31:0]                  sram1_din0,
-    input   logic   [31:0]                  sram1_dout0,
-
-    // SRAM-1 PORT-1
-    output  logic                           sram1_clk1,
-    output  logic                           sram1_csb1,
-    output  logic  [8:0]                    sram1_addr1,
-    input   logic  [31:0]                   sram1_dout1,
 `endif
 
     input   logic                           wb_rst_n,       // Wish bone reset
@@ -132,6 +118,7 @@ module ycr1_intf (
    input logic                              wb_icache_ack_i, // acknowlegement
    input logic                              wb_icache_lack_i,// last acknowlegement
    input logic                              wb_icache_err_i,  // error
+
    `endif
 
    `ifdef YCR1_DCACHE_EN
@@ -149,6 +136,7 @@ module ycr1_intf (
    input logic                              wb_dcache_ack_i, // acknowlegement
    input logic                              wb_dcache_lack_i,// last acknowlegement
    input logic                              wb_dcache_err_i,  // error
+
    `endif
 
     // Common
@@ -333,6 +321,24 @@ logic [1:0]                                         dcache_resp;
    logic                             wb_dcache_cclk_lack_i;// last acknowlegement
    logic                             wb_dcache_cclk_err_i; // error
 `endif
+`ifndef YCR1_TCM_MEM
+    // SRAM-1 PORT-0
+    logic                           sram1_clk0;
+    logic                           sram1_csb0;
+    logic                           sram1_web0;
+    logic   [8:0]                   sram1_addr0;
+    logic   [3:0]                   sram1_wmask0;
+    logic   [31:0]                  sram1_din0;
+    logic   [31:0]                  sram1_dout0;
+
+    // SRAM-1 PORT-1
+    logic                           sram1_clk1;
+    logic                           sram1_csb1;
+    logic  [8:0]                    sram1_addr1;
+    logic  [31:0]                   sram1_dout1;
+`endif
+
+logic [31:0]                        riscv_glbl_cfg;   
 //---------------------------------------------------------------------------------
 // To avoid core level power hook up, we have brought this signal inside, to
 // avoid any cell at digital core level
@@ -343,6 +349,13 @@ assign test_rst_n = 1'b0;
 assign riscv_debug = {core_imem_req_ack,core_imem_req,core_imem_cmd,core_imem_resp[1:0],
 	              core_dmem_req_ack,core_dmem_req,core_dmem_cmd,core_dmem_resp[1:0],
 		      wb_imem_req,wb_dmem_req,wb_imem_cmd,wb_imem_resp[1:0], core_debug };
+
+
+wire cfg_icache_pfet_dis      = riscv_glbl_cfg[0];
+wire cfg_icache_ntag_pfet_dis = riscv_glbl_cfg[1];
+
+wire cfg_dcache_pfet_dis      = riscv_glbl_cfg[2];
+wire cfg_dcache_force_flush   = riscv_glbl_cfg[3];
 //-------------------------------------------------------------------------------
 // Reset logic
 //-------------------------------------------------------------------------------
@@ -477,7 +490,9 @@ ycr1_timer i_timer (
 
     // Timer interface
     .timer_val      (timer_val         ),
-    .timer_irq      (timer_irq         )
+    .timer_irq      (timer_irq         ),
+
+    .riscv_glbl_cfg (riscv_glbl_cfg    )
 );
 
 
@@ -763,8 +778,8 @@ icache_top  u_icache (
 	.mclk                         (core_clk),	   //Clock input 
 	.rst_n                        (core_rst_n_local),  //Active Low Asynchronous Reset Signal Input
 
-	.cfg_pfet_dis                 (1'b0),              // To disable Next Pre data Pre fetch, default = 0
-	.cfg_ntag_pfet_dis            (1'b0),              // To disable next Tag refill, default = 0
+	.cfg_pfet_dis                 (cfg_icache_pfet_dis),// To disable Next Pre data Pre fetch, default = 0
+	.cfg_ntag_pfet_dis            (cfg_icache_ntag_pfet_dis),// To disable next Tag refill, default = 0
 
 	// Wishbone CPU I/F
         .cpu_mem_req                 (icache_req),        // strobe/request
@@ -786,7 +801,9 @@ icache_top  u_icache (
         .wb_app_dat_i                 (wb_icache_cclk_dat_i  ), // data input
         .wb_app_ack_i                 (wb_icache_cclk_ack_i  ), // acknowlegement
         .wb_app_lack_i                (wb_icache_cclk_lack_i ), // last acknowlegement
-        .wb_app_err_i                 (wb_icache_cclk_err_i  )  // error
+        .wb_app_err_i                 (wb_icache_cclk_err_i  ) // error
+
+
 
 );
 
@@ -866,22 +883,23 @@ ycr1_dcache_router u_dcache_router(
     .dcache_addr     (dcache_addr       ),
     .dcache_wdata    (dcache_wdata      ),
     .dcache_rdata    (dcache_rdata      ),
-    .dcache_resp     (dcache_resp       )
+    .dcache_resp     (dcache_resp       ),
+
 
 );
 
 
 // dcache top
 dcache_top  u_dcache (
-	.mclk                         (core_clk),	   //Clock input 
-	.rst_n                        (core_rst_n_local),  //Active Low Asynchronous Reset Signal Input
+	.mclk                         (core_clk),	       //Clock input 
+	.rst_n                        (core_rst_n_local),      //Active Low Asynchronous Reset Signal Input
 
-	.cfg_pfet_dis                 (1'b0),              // To disable Next Pre data Pre fetch, default = 0
-	.cfg_force_flush              (1'b0),              // Force flush
+	.cfg_pfet_dis                 (cfg_dcache_pfet_dis),   // To disable Next Pre data Pre fetch, default = 0
+	.cfg_force_flush              (cfg_dcache_force_flush),// Force flush
 
 	// Wishbone CPU I/F
         .cpu_mem_req                 (dcache_req),        // strobe/request
-        .cpu_mem_cmd                 (dcache_cmd),       // address
+        .cpu_mem_cmd                 (dcache_cmd),        // address
         .cpu_mem_addr                (dcache_addr),       // address
 	.cpu_mem_width               (dcache_width),
         .cpu_mem_wdata               (dcache_wdata),      // data input
@@ -998,5 +1016,32 @@ ycr1_dmem_wb i_dmem_wb (
     .wbd_ack_i      (wbd_dmem_ack_i    ), 
     .wbd_err_i      (wbd_dmem_err_i    )
 );
+
+`ifndef SCR1_TCM_MEM
+
+  /**
+  sky130_sram_2kbyte_1rw1r_32x512_8 u_tsram1_2kb(
+`ifdef USE_POWER_PINS
+    .vccd1 (vccd1),// User area 1 1.8V supply
+    .vssd1 (vssd1),// User area 1 digital ground
+`endif
+// Port 0: RW
+    .clk0     (sram1_clk0),
+    .csb0     (sram1_csb0),
+    .web0     (sram1_web0),
+    .wmask0   (sram1_wmask0),
+    .addr0    (sram1_addr0),
+    .din0     (sram1_din0),
+    .dout0    (sram1_dout0),
+// Port 1: R
+    .clk1     (sram1_clk1),
+    .csb1     (sram1_csb1),
+    .addr1    (sram1_addr1),
+    .dout1    (sram1_dout1)
+  );
+  ***/
+  assign sram1_dout1 = 'h0;
+  assign sram1_dout0 = 'h0;
+`endif
 
 endmodule : ycr1_intf

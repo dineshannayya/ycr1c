@@ -78,38 +78,6 @@ logic   [YCR1_WB_WIDTH-1:0]             wbd_dmem_dat_i; // data input
 logic                                   wbd_dmem_ack_i; // acknowlegement
 logic                                   wbd_dmem_err_i; // error
 
-`ifndef SCR1_TCM_MEM
-// SRAM-0 PORT-0 - DMEM I/F
-wire                                    sram0_clk0    ; // CLK
-wire                                    sram0_csb0    ; // CS#
-wire                                    sram0_web0    ; // WE#
-wire   [8:0]                            sram0_addr0   ; // Address
-wire   [3:0]                            sram0_wmask0  ; // WMASK#
-wire   [31:0]                           sram0_din0    ; // Write Data
-wire   [31:0]                           sram0_dout0   ; // Read Data
-
-// SRAM-0 PORT-1, IMEM I/F
-wire                                    sram0_clk1    ; // CLK
-wire                                    sram0_csb1    ; // CS#
-wire  [8:0]                             sram0_addr1   ; // Address
-wire  [31:0]                            sram0_dout1   ; // Read Data
-
-// SRAM-1 PORT-0 - DMEM I/F
-wire                                    sram1_clk0    ; // CLK
-wire                                    sram1_csb0    ; // CS#
-wire                                    sram1_web0    ; // WE#
-wire   [8:0]                            sram1_addr0   ; // Address
-wire   [3:0]                            sram1_wmask0  ; // WMASK#
-wire   [31:0]                           sram1_din0    ; // Write Data
-wire   [31:0]                           sram1_dout0   ; // Read Data
-
-// SRAM-1 PORT-1, IMEM I/F
-wire                                    sram1_clk1    ; // CLK
-wire                                    sram1_csb1    ; // CS#
-wire  [8:0]                             sram1_addr1   ; // Address
-wire  [31:0]                            sram1_dout1   ; // Read Data
-`endif
-
 int unsigned                            f_results     ;
 int unsigned                            f_info        ;
 
@@ -394,38 +362,6 @@ ycr1_top_wb i_top (
     .tdo_en                 (tdo_en                 ),
 `endif // YCR1_DBG_EN
 
-`ifndef SCR1_TCM_MEM
-    // SRAM-0 PORT-0
-    .sram0_clk0             (sram0_clk0                ),
-    .sram0_csb0             (sram0_csb0                ),
-    .sram0_web0             (sram0_web0                ),
-    .sram0_addr0            (sram0_addr0               ),
-    .sram0_wmask0           (sram0_wmask0              ),
-    .sram0_din0             (sram0_din0                ),
-    .sram0_dout0            (sram0_dout0               ),
-    
-    // SRAM-0 PORT-0
-    .sram0_clk1             (sram0_clk1                ),
-    .sram0_csb1             (sram0_csb1                ),
-    .sram0_addr1            (sram0_addr1               ),
-    .sram0_dout1            (sram0_dout1               ),
-
-    // SRAM-1 PORT-0
-    .sram1_clk0             (sram1_clk0                ),
-    .sram1_csb0             (sram1_csb0                ),
-    .sram1_web0             (sram1_web0                ),
-    .sram1_addr0            (sram1_addr0               ),
-    .sram1_wmask0           (sram1_wmask0              ),
-    .sram1_din0             (sram1_din0                ),
-    .sram1_dout0            (sram1_dout0               ),
-    
-    // SRAM PORT-0
-    .sram1_clk1             (sram1_clk1                ),
-    .sram1_csb1             (sram1_csb1                ),
-    .sram1_addr1            (sram1_addr1               ),
-    .sram1_dout1            (sram1_dout1               ),
-`endif
-
     .wb_rst_n               (rst_n                  ),
     .wb_clk                 (clk                    ),
    `ifdef YCR1_ICACHE_EN
@@ -462,14 +398,14 @@ ycr1_top_wb i_top (
     .wb_dcache_err_i                    (wb_dcache_err_i  ),  // error
    `endif
 
-    .wbd_imem_stb_o         (wbd_imem_stb_o         ),
-    .wbd_imem_adr_o         (wbd_imem_adr_o         ),
-    .wbd_imem_we_o          (wbd_imem_we_o          ),
-    .wbd_imem_dat_o         (wbd_imem_dat_o         ),
-    .wbd_imem_sel_o         (wbd_imem_sel_o         ),
-    .wbd_imem_dat_i         (wbd_imem_dat_i         ),
-    .wbd_imem_ack_i         (wbd_imem_ack_i         ),
-    .wbd_imem_err_i         (wbd_imem_err_i         ),
+    //.wbd_imem_stb_o         (wbd_imem_stb_o         ),
+    //.wbd_imem_adr_o         (wbd_imem_adr_o         ),
+    //.wbd_imem_we_o          (wbd_imem_we_o          ),
+    //.wbd_imem_dat_o         (wbd_imem_dat_o         ),
+    //.wbd_imem_sel_o         (wbd_imem_sel_o         ),
+    //.wbd_imem_dat_i         (wbd_imem_dat_i         ),
+    //.wbd_imem_ack_i         (wbd_imem_ack_i         ),
+    //.wbd_imem_err_i         (wbd_imem_err_i         ),
 
     .wbd_dmem_stb_o         (wbd_dmem_stb_o         ),
     .wbd_dmem_adr_o         (wbd_dmem_adr_o         ),
@@ -573,47 +509,6 @@ ycr1_dmem_tb_wb #(
 wire  dmem_req =  i_top.core_dmem_req & i_top.core_dmem_req_ack;
 
 
-`ifndef SCR1_TCM_MEM
-sky130_sram_2kbyte_1rw1r_32x512_8 u_tsram0_2kb(
-`ifdef USE_POWER_PINS
-    .vccd1 (vccd1),// User area 1 1.8V supply
-    .vssd1 (vssd1),// User area 1 digital ground
-`endif
-// Port 0: RW
-    .clk0     (sram0_clk0),
-    .csb0     (sram0_csb0),
-    .web0     (sram0_web0),
-    .wmask0   (sram0_wmask0),
-    .addr0    (sram0_addr0),
-    .din0     (sram0_din0),
-    .dout0    (sram0_dout0),
-// Port 1: R
-    .clk1     (sram0_clk1),
-    .csb1     (sram0_csb1),
-    .addr1    (sram0_addr1),
-    .dout1    (sram0_dout1)
-  );
-
-  sky130_sram_2kbyte_1rw1r_32x512_8 u_tsram1_2kb(
-`ifdef USE_POWER_PINS
-    .vccd1 (vccd1),// User area 1 1.8V supply
-    .vssd1 (vssd1),// User area 1 digital ground
-`endif
-// Port 0: RW
-    .clk0     (sram1_clk0),
-    .csb0     (sram1_csb0),
-    .web0     (sram1_web0),
-    .wmask0   (sram1_wmask0),
-    .addr0    (sram1_addr0),
-    .din0     (sram1_din0),
-    .dout0    (sram1_dout0),
-// Port 1: R
-    .clk1     (sram1_clk1),
-    .csb1     (sram1_csb1),
-    .addr1    (sram1_addr1),
-    .dout1    (sram1_dout1)
-  );
-`endif
 
 initial begin
    riscv_dmem_req_cnt = 0;
