@@ -879,11 +879,11 @@ ycr1_dcache_router u_dcache_router(
     .dcache_req_ack  (dcache_req_ack    ),
     .dcache_req      (dcache_req        ),
     .dcache_cmd      (dcache_cmd        ),
-    .dcache_width    (dcache_width        ),
+    .dcache_width    (dcache_width      ),
     .dcache_addr     (dcache_addr       ),
     .dcache_wdata    (dcache_wdata      ),
     .dcache_rdata    (dcache_rdata      ),
-    .dcache_resp     (dcache_resp       ),
+    .dcache_resp     (dcache_resp       )
 
 
 );
