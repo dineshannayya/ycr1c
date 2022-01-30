@@ -186,7 +186,8 @@ always_ff @(posedge clk, negedge rst_n) begin
         mtimecmp_reg    <= '0;
     end else begin
         if (mtimecmplo_up | mtimecmphi_up) begin
-
+            mtimecmp_reg    <= mtimecmp_new;
+        end
     end
 end
 

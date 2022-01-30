@@ -145,7 +145,6 @@ module ycr1_top_wb (
 
    `ifdef YCR1_ICACHE_EN
    // Wishbone ICACHE I/F
-   output logic                             wb_icache_cyc_o, // strobe/request
    output logic                             wb_icache_stb_o, // strobe/request
    output logic   [YCR1_WB_WIDTH-1:0]       wb_icache_adr_o, // address
    output logic                             wb_icache_we_o,  // write
@@ -163,7 +162,6 @@ module ycr1_top_wb (
 
    `ifdef YCR1_DCACHE_EN
    // Wishbone ICACHE I/F
-   output logic                             wb_dcache_cyc_o, // strobe/request
    output logic                             wb_dcache_stb_o, // strobe/request
    output logic   [YCR1_WB_WIDTH-1:0]       wb_dcache_adr_o, // address
    output logic                             wb_dcache_we_o,  // write
