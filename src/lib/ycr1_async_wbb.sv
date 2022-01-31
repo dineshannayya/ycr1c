@@ -239,7 +239,7 @@ assign wbs_cyc_o = (wbs_burst) ? 1'b1 : ((wbs_ack_f) ? 1'b0 : (s_cmd_rd_empty) ?
 // In Read Phase 
 //      Generate burst ready, only when space in response fifo 
 //
-assign wbs_bry_o = (wbs_we_o) ? ((s_cmd_rd_empty || s_cmd_rd_aempty || s_resp_wr_afull || s_resp_wr_full ) ? 1'b0: 1'b1) :
+assign wbs_bry_o = (wbs_we_o) ? ((s_cmd_rd_empty) ? 1'b0: 1'b1) :
 	                         (s_resp_wr_afull || s_resp_wr_full ) ? 1'b0: 1'b1;
 
 // During Write phase, cmd fifo will have wdata, so dequeue for every ack
