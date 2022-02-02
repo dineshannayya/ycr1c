@@ -239,7 +239,7 @@ assign wbs_cyc_o = (wbs_burst) ? 1'b1 : ((wbs_ack_f) ? 1'b0 : (s_cmd_rd_empty) ?
 // In Read Phase 
 //      Generate burst ready, only when space in response fifo 
 //
-assign wbs_bry_o = (wbs_we_o) ? ((s_cmd_rd_empty || (s_cmd_rd_aempty && wbs_ack_i)) ? 1'b0: 1'b1) :
+assign wbs_bry_o = (wbs_we_o) ? ((s_cmd_rd_empty  || (s_cmd_rd_aempty)) ? 1'b0: 1'b1) :
 	                         (s_resp_wr_afull || s_resp_wr_full ) ? 1'b0: 1'b1;
 
 // During Write phase, cmd fifo will have wdata, so dequeue for every ack
@@ -249,7 +249,7 @@ assign s_cmd_rd_en = (wbs_stb_o && wbs_we_o) ? wbs_ack_i: wbs_lack_i;
 
 // Write Interface
 // response send only for read logic
-assign s_resp_wr_en   = wbs_stb_o & (!wbs_we_o) & wbs_ack_i & !s_resp_wr_full;
+assign s_resp_wr_en   = wbs_stb_o & (!wbs_we_o) & wbs_ack_i ;
 assign s_resp_wr_data = {wbs_err_i,wbs_lack_i,wbs_dat_i};
 
 async_fifo #(.W(CFW), .DP(4), .WR_FAST(1), .RD_FAST(1)) u_cmd_if (
