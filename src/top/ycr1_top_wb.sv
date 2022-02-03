@@ -148,7 +148,6 @@ module ycr1_top_wb (
    output logic                             wb_icache_stb_o, // strobe/request
    output logic   [YCR1_WB_WIDTH-1:0]       wb_icache_adr_o, // address
    output logic                             wb_icache_we_o,  // write
-   output logic   [YCR1_WB_WIDTH-1:0]       wb_icache_dat_o, // data output
    output logic   [3:0]                     wb_icache_sel_o, // byte enable
    output logic   [9:0]                     wb_icache_bl_o,  // Burst Length
    output logic                             wb_icache_bry_o, // Burst Ready 
@@ -158,6 +157,20 @@ module ycr1_top_wb (
    input logic                              wb_icache_lack_i,// last acknowlegement
    input logic                              wb_icache_err_i,  // error
 
+   // CACHE SRAM Memory I/F
+   output logic                             icache_mem_clk0, // CLK
+   output logic                             icache_mem_csb0, // CS#
+   output logic                             icache_mem_web0, // WE#
+   output logic   [8:0]                     icache_mem_addr0, // Address
+   output logic   [3:0]                     icache_mem_wmask0, // WMASK#
+   output logic   [31:0]                    icache_mem_din0, // Write Data
+   //input  logic   [31:0]                  icache_mem_dout0, // Read Data
+   
+   // SRAM-0 PORT-1, IMEM I/F
+   output logic                             icache_mem_clk1, // CLK
+   output logic                             icache_mem_csb1, // CS#
+   output logic  [8:0]                      icache_mem_addr1, // Address
+   input  logic  [31:0]                     icache_mem_dout1, // Read Data
    `endif
 
    `ifdef YCR1_DCACHE_EN
@@ -175,6 +188,20 @@ module ycr1_top_wb (
    input logic                              wb_dcache_lack_i,// last acknowlegement
    input logic                              wb_dcache_err_i,  // error
 
+   // CACHE SRAM Memory I/F
+   output logic                             dcache_mem_clk0           , // CLK
+   output logic                             dcache_mem_csb0           , // CS#
+   output logic                             dcache_mem_web0           , // WE#
+   output logic   [8:0]                     dcache_mem_addr0          , // Address
+   output logic   [3:0]                     dcache_mem_wmask0         , // WMASK#
+   output logic   [31:0]                    dcache_mem_din0           , // Write Data
+   input  logic   [31:0]                    dcache_mem_dout0          , // Read Data
+   
+   // SRAM-0 PORT-1, IMEM I/F
+   output logic                             dcache_mem_clk1           , // CLK
+   output logic                             dcache_mem_csb1           , // CS#
+   output logic  [8:0]                      dcache_mem_addr1          , // Address
+   input  logic  [31:0]                     dcache_mem_dout1          , // Read Data
    `endif
 
     // Instruction Memory Interface
@@ -317,19 +344,19 @@ ycr1_intf u_intf (
 
 `ifndef YCR1_TCM_MEM
     // SRAM-0 PORT-0
-    .sram0_clk0      (sram0_clk0),
-    .sram0_csb0      (sram0_csb0),
-    .sram0_web0      (sram0_web0),
-    .sram0_addr0     (sram0_addr0),
-    .sram0_wmask0    (sram0_wmask0),
-    .sram0_din0      (sram0_din0),
-    .sram0_dout0     (sram0_dout0),
+    .sram0_clk0                        (sram0_clk0),
+    .sram0_csb0                        (sram0_csb0),
+    .sram0_web0                        (sram0_web0),
+    .sram0_addr0                       (sram0_addr0),
+    .sram0_wmask0                      (sram0_wmask0),
+    .sram0_din0                        (sram0_din0),
+    .sram0_dout0                       (sram0_dout0),
     
     // SRAM-0 PORT-1
-    .sram0_clk1      (sram0_clk1),
-    .sram0_csb1      (sram0_csb1),
-    .sram0_addr1     (sram0_addr1),
-    .sram0_dout1     (sram0_dout1),
+    .sram0_clk1                        (sram0_clk1),
+    .sram0_csb1                        (sram0_csb1),
+    .sram0_addr1                       (sram0_addr1),
+    .sram0_dout1                       (sram0_dout1),
  
 `endif
 
@@ -358,11 +385,10 @@ ycr1_intf u_intf (
 
    `ifdef YCR1_ICACHE_EN
    // Wishbone ICACHE I/F
-    .wb_icache_cyc_o                    (wb_icache_cyc_o  ), // strobe/request
+    .wb_icache_cyc_o                    (                 ), // strobe/request
     .wb_icache_stb_o                    (wb_icache_stb_o  ), // strobe/request
     .wb_icache_adr_o                    (wb_icache_adr_o  ), // address
     .wb_icache_we_o                     (wb_icache_we_o   ), // write
-    .wb_icache_dat_o                    (wb_icache_dat_o  ), // data output
     .wb_icache_sel_o                    (wb_icache_sel_o  ), // byte enable
     .wb_icache_bl_o                     (wb_icache_bl_o   ), // Burst Length
     .wb_icache_bry_o                    (wb_icache_bry_o  ), // Burst Ready
@@ -371,12 +397,27 @@ ycr1_intf u_intf (
     .wb_icache_ack_i                    (wb_icache_ack_i  ), // acknowlegement
     .wb_icache_lack_i                   (wb_icache_lack_i ),// last acknowlegement
     .wb_icache_err_i                    (wb_icache_err_i  ),  // error
+
+   .icache_mem_clk0                     (icache_mem_clk0  ), // CLK
+   .icache_mem_csb0                     (icache_mem_csb0  ), // CS#
+   .icache_mem_web0                     (icache_mem_web0  ), // WE#
+   .icache_mem_addr0                    (icache_mem_addr0 ), // Address
+   .icache_mem_wmask0                   (icache_mem_wmask0), // WMASK#
+   .icache_mem_din0                     (icache_mem_din0  ), // Write Data
+// .icache_mem_dout0                    (icache_mem_dout0 ), // Read Data
+                                             
+                                             
+   .icache_mem_clk1                      (icache_mem_clk1 ), // CLK
+   .icache_mem_csb1                      (icache_mem_csb1 ), // CS#
+   .icache_mem_addr1                     (icache_mem_addr1), // Address
+   .icache_mem_dout1                     (icache_mem_dout1), // Read Data
+
    `endif
 
 
    `ifdef YCR1_DCACHE_EN
    // Wishbone DCACHE I/F
-    .wb_dcache_cyc_o                    (wb_dcache_cyc_o  ), // strobe/request
+    .wb_dcache_cyc_o                    (                 ), // strobe/request
     .wb_dcache_stb_o                    (wb_dcache_stb_o  ), // strobe/request
     .wb_dcache_adr_o                    (wb_dcache_adr_o  ), // address
     .wb_dcache_we_o                     (wb_dcache_we_o   ), // write
@@ -389,6 +430,20 @@ ycr1_intf u_intf (
     .wb_dcache_ack_i                    (wb_dcache_ack_i  ), // acknowlegement
     .wb_dcache_lack_i                   (wb_dcache_lack_i ),// last acknowlegement
     .wb_dcache_err_i                    (wb_dcache_err_i  ),  // error
+
+   .dcache_mem_clk0                     (dcache_mem_clk0  ), // CLK
+   .dcache_mem_csb0                     (dcache_mem_csb0  ), // CS#
+   .dcache_mem_web0                     (dcache_mem_web0  ), // WE#
+   .dcache_mem_addr0                    (dcache_mem_addr0 ), // Address
+   .dcache_mem_wmask0                   (dcache_mem_wmask0), // WMASK#
+   .dcache_mem_din0                     (dcache_mem_din0  ), // Write Data
+   .dcache_mem_dout0                    (dcache_mem_dout0 ), // Read Data
+                                             
+                                             
+   .dcache_mem_clk1                     (dcache_mem_clk1  ), // CLK
+   .dcache_mem_csb1                     (dcache_mem_csb1  ), // CS#
+   .dcache_mem_addr1                    (dcache_mem_addr1 ), // Address
+   .dcache_mem_dout1                    (dcache_mem_dout1 ), // Read Data
 
    `endif
     // Common

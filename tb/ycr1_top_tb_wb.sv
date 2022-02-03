@@ -136,6 +136,22 @@ wire  [31:0]                            sram0_dout1   ; // Read Data
    logic                             wb_icache_ack_i; // acknowlegement
    logic                             wb_icache_lack_i;// last acknowlegement
    logic                             wb_icache_err_i;  // error
+
+   // CACHE SRAM Memory I/F
+    logic                            icache_mem_clk0; // CLK
+    logic                            icache_mem_csb0; // CS#
+    logic                            icache_mem_web0; // WE#
+    logic   [8:0]                    icache_mem_addr0; // Address
+    logic   [3:0]                    icache_mem_wmask0; // WMASK#
+    logic   [31:0]                   icache_mem_din0; // Write Data
+   //input  logic   [31:0]           icache_mem_dout0; // Read Data
+   
+   // SRAM-0 PORT-1, IMEM I/F
+   logic                             icache_mem_clk1; // CLK
+   logic                             icache_mem_csb1; // CS#
+   logic  [8:0]                      icache_mem_addr1; // Address
+   logic  [31:0]                     icache_mem_dout1; // Read Data
+
 `endif
 
 `ifdef YCR1_DCACHE_EN
@@ -152,6 +168,21 @@ wire  [31:0]                            sram0_dout1   ; // Read Data
    logic                             wb_dcache_ack_i; // acknowlegement
    logic                             wb_dcache_lack_i;// last acknowlegement
    logic                             wb_dcache_err_i;  // error
+
+   // CACHE SRAM Memory I/F
+   logic                             dcache_mem_clk0  ; // CLK
+   logic                             dcache_mem_csb0  ; // CS#
+   logic                             dcache_mem_web0  ; // WE#
+   logic   [8:0]                     dcache_mem_addr0 ; // Address
+   logic   [3:0]                     dcache_mem_wmask0; // WMASK#
+   logic   [31:0]                    dcache_mem_din0  ; // Write Data
+   logic   [31:0]                    dcache_mem_dout0 ; // Read Data
+   
+   // SRAM-0 PORT-1, IMEM I/F
+   logic                             dcache_mem_clk1  ; // CLK
+   logic                             dcache_mem_csb1  ; // CS#
+   logic  [8:0]                      dcache_mem_addr1 ; // Address
+   logic  [31:0]                     dcache_mem_dout1 ; // Read Data
 `endif
 
 `ifdef VERILATOR
@@ -410,6 +441,21 @@ ycr1_top_wb i_top (
     .wb_icache_ack_i                    (wb_icache_ack_i  ), // acknowlegement
     .wb_icache_lack_i                   (wb_icache_lack_i ),// last acknowlegement
     .wb_icache_err_i                    (wb_icache_err_i  ),  // error
+
+   .icache_mem_clk0                     (icache_mem_clk0  ), // CLK
+   .icache_mem_csb0                     (icache_mem_csb0  ), // CS#
+   .icache_mem_web0                     (icache_mem_web0  ), // WE#
+   .icache_mem_addr0                    (icache_mem_addr0 ), // Address
+   .icache_mem_wmask0                   (icache_mem_wmask0), // WMASK#
+   .icache_mem_din0                     (icache_mem_din0  ), // Write Data
+// .icache_mem_dout0                    (icache_mem_dout0 ), // Read Data
+                                             
+                                             
+   .icache_mem_clk1                      (icache_mem_clk1 ), // CLK
+   .icache_mem_csb1                      (icache_mem_csb1 ), // CS#
+   .icache_mem_addr1                     (icache_mem_addr1), // Address
+   .icache_mem_dout1                     (icache_mem_dout1), // Read Data
+
    `endif
 
    `ifdef YCR1_DCACHE_EN
@@ -426,6 +472,21 @@ ycr1_top_wb i_top (
     .wb_dcache_ack_i                    (wb_dcache_ack_i  ), // acknowlegement
     .wb_dcache_lack_i                   (wb_dcache_lack_i ),// last acknowlegement
     .wb_dcache_err_i                    (wb_dcache_err_i  ),  // error
+
+   .dcache_mem_clk0                     (dcache_mem_clk0  ), // CLK
+   .dcache_mem_csb0                     (dcache_mem_csb0  ), // CS#
+   .dcache_mem_web0                     (dcache_mem_web0  ), // WE#
+   .dcache_mem_addr0                    (dcache_mem_addr0 ), // Address
+   .dcache_mem_wmask0                   (dcache_mem_wmask0), // WMASK#
+   .dcache_mem_din0                     (dcache_mem_din0  ), // Write Data
+   .dcache_mem_dout0                    (dcache_mem_dout0 ), // Read Data
+                                             
+                                             
+   .dcache_mem_clk1                     (dcache_mem_clk1  ), // CLK
+   .dcache_mem_csb1                     (dcache_mem_csb1  ), // CS#
+   .dcache_mem_addr1                    (dcache_mem_addr1 ), // Address
+   .dcache_mem_dout1                    (dcache_mem_dout1 ), // Read Data
+
    `endif
 
     //.wbd_imem_stb_o         (wbd_imem_stb_o         ),
@@ -470,6 +531,51 @@ sky130_sram_2kbyte_1rw1r_32x512_8 u_tsram0_2kb(
     .dout1    (sram0_dout1)
   );
 
+`endif
+
+
+`ifdef YCR1_ICACHE_EN
+sky130_sram_2kbyte_1rw1r_32x512_8 u_icache_2kb(
+`ifdef USE_POWER_PINS
+    .vccd1 (vccd1),// User area 1 1.8V supply
+    .vssd1 (vssd1),// User area 1 digital ground
+`endif
+// Port 0: RW
+    .clk0     (icache_mem_clk0),
+    .csb0     (icache_mem_csb0),
+    .web0     (icache_mem_web0),
+    .wmask0   (icache_mem_wmask0),
+    .addr0    (icache_mem_addr0),
+    .din0     (icache_mem_din0),
+    .dout0    (),
+// Port 1: R
+    .clk1     (icache_mem_clk1),
+    .csb1     (icache_mem_csb1),
+    .addr1    (icache_mem_addr1),
+    .dout1    (icache_mem_dout1)
+  );
+`endif
+
+`ifdef YCR1_DCACHE_EN
+sky130_sram_2kbyte_1rw1r_32x512_8 u_dcache_2kb(
+`ifdef USE_POWER_PINS
+    .vccd1 (vccd1),// User area 1 1.8V supply
+    .vssd1 (vssd1),// User area 1 digital ground
+`endif
+// Port 0: RW
+    .clk0     (dcache_mem_clk0),
+    .csb0     (dcache_mem_csb0),
+    .web0     (dcache_mem_web0),
+    .wmask0   (dcache_mem_wmask0),
+    .addr0    (dcache_mem_addr0),
+    .din0     (dcache_mem_din0),
+    .dout0    (dcache_mem_dout0),
+// Port 1: R
+    .clk1     (dcache_mem_clk1),
+    .csb1     (dcache_mem_csb1),
+    .addr1    (dcache_mem_addr1),
+    .dout1    (dcache_mem_dout1)
+  );
 `endif
 
 //-------------------------------------------------------------------------------
