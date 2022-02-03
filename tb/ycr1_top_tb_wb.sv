@@ -432,7 +432,6 @@ ycr1_top_wb i_top (
     .wb_icache_stb_o                    (wb_icache_stb_o  ), // strobe/request
     .wb_icache_adr_o                    (wb_icache_adr_o  ), // address
     .wb_icache_we_o                     (wb_icache_we_o   ),  // write
-    .wb_icache_dat_o                    (wb_icache_dat_o  ), // data output
     .wb_icache_sel_o                    (wb_icache_sel_o  ), // byte enable
     .wb_icache_bl_o                     (wb_icache_bl_o   ),  // Burst Length
     .wb_icache_bry_o                    (wb_icache_bry_o  ),  // Burst Ready
@@ -601,7 +600,7 @@ ycr1_memory_tb_wb #(
     .wbd_imem_stb_i         (wb_icache_stb_o       ),
     .wbd_imem_adr_i         (wb_icache_adr_o       ),
     .wbd_imem_we_i          (wb_icache_we_o        ),
-    .wbd_imem_dat_i         (wb_icache_dat_o       ),
+    .wbd_imem_dat_i         ('h0                   ), // Unused for icache
     .wbd_imem_sel_i         (wb_icache_sel_o       ),
     .wbd_imem_bl_i          (wb_icache_bl_o        ),
     .wbd_imem_bry_i         (wb_icache_bry_o        ),
