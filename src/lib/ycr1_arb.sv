@@ -92,7 +92,7 @@ parameter       GRANTX     = 2'b11;
 //////////////////////////////////////////////////////////////////////
 
 reg [1:0]	state, gstate, next_state,next_gstate;
-reg [1:0]       gnt_l;
+reg [1:0]       gnt_int;
 
 ///////////////////////////////////////////////////////////////////////
 //  Misc Logic 
@@ -103,9 +103,9 @@ always@(posedge clk or negedge rstn)
     if(!rstn) begin
        state <= FSM_GRANT0;
        gstate<= FSM_GRANT0;
-       gnt_l <= GRANTX;
+       gnt <= GRANTX;
     end else begin		
-            gnt_l  <= gnt;
+            gnt    <= gnt_int;
 	    state  <= next_state;
 	    gstate <= next_gstate;
     end
@@ -120,36 +120,41 @@ always@(posedge clk or negedge rstn)
 
 always_comb
    begin
-      gnt           = gnt_l;
+      gnt_int       = gnt;
       next_state    = state;	// Default Keep State
       next_gstate   = gstate;       
       case(state)		
 	 FSM_GRANT0: begin
       	// if this req is dropped or next is asserted, check for other req's
 	     if(req[0] ) begin
-	     	gnt          = GRANT0;
+	     	gnt_int      = GRANT0;
 	     	next_gstate  = FSM_GRANT1; // Next Priority Grant State
 	     	next_state   = WAIT_ACK;
 	     end else if(req[1]) begin
-	     	gnt          = GRANT1;
+	     	gnt_int      = GRANT1;
 	     	next_gstate  = FSM_GRANT0;  // Next Priority Grant State
 	     	next_state   = WAIT_ACK;
+	     end else begin
+	     	gnt_int      = GRANTX;
 	     end
       	end
 	FSM_GRANT1: begin
       	// if this req is dropped or next is asserted, check for other req's
 	     if(req[1] ) begin
-	     	gnt          = GRANT1;
+	     	gnt_int      = GRANT1;
 	     	next_gstate  = FSM_GRANT0;  // Next Priority Grant State
 	     	next_state   = WAIT_ACK;
 	     end else if(req[0]) begin
-	     	gnt          = GRANT0;
+	     	gnt_int      = GRANT0;
 	     	next_gstate  = FSM_GRANT1;  // Next Priority Grant State
 	     	next_state   = WAIT_ACK;
+	     end else begin
+	     	gnt_int      = GRANTX;
 	     end
       	end
 	WAIT_ACK : begin
 		if(ack) begin
+	     	    gnt_int      = GRANTX;
 	     	    next_state   = next_gstate;
 		end
 	end
