@@ -116,10 +116,12 @@ module ycr1_async_wbb
 parameter CFW = AW+DW+BW+BL+1 ; // COMMAND FIFO WIDTH
 parameter RFW = DW+1+1 ;        // RESPONSE FIFO WIDTH
 
+parameter IDLE        = 2'b00;
+parameter WRITE_DATA  = 2'b01;
+parameter READ_DATA   = 2'b10;
 //-------------------------------------------------
 //  Master Interface
 // -------------------------------------------------
-logic           PendingRd     ; // Pending Read Transaction
 logic           m_cmd_wr_en       ;
 logic [CFW-1:0] m_cmd_wr_data     ;
 logic           m_cmd_wr_full     ;
@@ -129,59 +131,100 @@ logic           m_resp_rd_empty    ;
 logic           m_resp_rd_aempty   ;
 logic           m_resp_rd_en       ;
 logic [RFW-1:0] m_resp_rd_data     ;
-logic           wbm_stb_l          ;
-logic [BL-1:0]  wbm_bl_cnt         ;
+logic [BL-1:0]  m_bl_cnt           ;
+logic [1:0]     m_state            ;
+logic           wbm_bry_i          ;
+
+assign wbm_bry_i = 1; // Master is always ready to accepts
 
 // Master Write Interface
 
 
-assign m_cmd_wr_en = (!PendingRd) && wbm_stb_i && !m_cmd_wr_full && !m_cmd_wr_afull;
-
 assign m_cmd_wr_data = {wbm_adr_i,wbm_we_i,wbm_dat_i,wbm_sel_i,wbm_bl_i};
 
-wire wbm_stb_pedge = (wbm_stb_l == 1'b0) && wbm_stb_i;
+assign wbm_dat_o = m_resp_rd_data[DW-1:0];
+assign wbm_err_o = 'b0;
 
 always@(negedge wbm_rst_n or posedge wbm_clk_i)
 begin
    if(wbm_rst_n == 0) begin
-      PendingRd <= 1'b0;
-      wbm_stb_l <= 1'b0;
-      wbm_bl_cnt <= 'h0;
+        m_cmd_wr_en        <= 'b0;
+        m_resp_rd_en       <= 'b0;
+        m_state            <= 'h0;
+        m_bl_cnt           <= 'h0;
+        wbm_ack_o          <= 'b0;
+        wbm_lack_o         <= 'b0;
    end else begin
-      if(wbm_lack_o)  
-	 wbm_stb_l <= 1'b0;
-      else if(m_cmd_wr_en)
-          wbm_stb_l <= wbm_stb_i;
-      if(wbm_stb_pedge)
-	 wbm_bl_cnt <= wbm_bl_i;
-      else if(m_cmd_wr_en)
-	 wbm_bl_cnt <= wbm_bl_cnt-1;
-
-      if((!PendingRd) && wbm_stb_i && (!wbm_we_i) && m_cmd_wr_en) begin
-      PendingRd <= 1'b1;
-      end else if(PendingRd && wbm_stb_i && (!wbm_we_i) && wbm_lack_o) begin
-         PendingRd <= 1'b0;
+      case(m_state)
+      IDLE:  begin
+	 // Read DATA
+	 // Make sure that FIFO is not overflow and there is no previous
+	 // pending write + fifo is about to full
+         if(wbm_stb_i && !wbm_we_i && wbm_bry_i && !m_cmd_wr_full && !(m_cmd_wr_afull && m_cmd_wr_en)  && !wbm_lack_o) begin
+           m_bl_cnt         <= wbm_bl_i;
+           m_cmd_wr_en      <= 'b1;
+           m_state          <= READ_DATA;
+         end else if(wbm_stb_i && wbm_we_i && wbm_bry_i && !m_cmd_wr_full && !(m_cmd_wr_afull && m_cmd_wr_en) && !wbm_lack_o) begin
+            wbm_ack_o       <= 'b1;
+            m_cmd_wr_en     <= 'b1;
+            m_bl_cnt        <= wbm_bl_i-1;
+            if(wbm_bl_i == 'h1) begin
+               wbm_lack_o   <= 'b1;
+               m_state      <= IDLE;
+            end else begin
+               m_bl_cnt     <= wbm_bl_i-1;
+               m_state      <= WRITE_DATA;
+            end
+         end else begin
+            m_resp_rd_en    <= 'b0;
+            m_cmd_wr_en     <= 'b0;
+            wbm_ack_o       <= 'b0;
+            wbm_lack_o      <= 'b0;
+         end
       end
+
+      // Write next Transaction
+      WRITE_DATA: begin
+         if(m_cmd_wr_full != 1 && !(m_cmd_wr_afull && m_cmd_wr_en) && wbm_bry_i) begin
+            wbm_ack_o       <= 'b1;
+            m_cmd_wr_en     <= 'b1;
+            if(m_bl_cnt == 1) begin
+               wbm_lack_o   <= 'b1;
+               m_state      <= IDLE;
+            end else begin
+               m_bl_cnt        <= m_bl_cnt-1;
+            end
+         end else begin
+            m_cmd_wr_en     <= 'b0;
+            wbm_ack_o       <= 'b0;
+            wbm_lack_o      <= 'b0;
+         end
+      end
+
+      // Read Transaction
+      READ_DATA: begin
+	   // Check Back to Back Ack and last Location case
+           if(((wbm_ack_o == 0 && m_resp_rd_empty != 1) ||
+	       (wbm_ack_o == 1 && m_resp_rd_aempty != 1)) && wbm_bry_i) begin
+              m_resp_rd_en   <= 'b1;
+              wbm_ack_o      <= 'b1;
+              if(m_bl_cnt == 1) begin
+                  wbm_lack_o   <= 'b1;
+                  m_state      <= IDLE;
+              end else begin
+                 m_bl_cnt        <= m_bl_cnt-1;
+	      end
+           end else begin
+              m_resp_rd_en    <= 'b0;
+              m_cmd_wr_en     <= 'b0;
+              wbm_ack_o       <= 'b0;
+              wbm_lack_o      <= 'b0;
+	   end
+      end
+      endcase
    end
 end
 
-
-// Master Read Interface
-// For Write is feed through, if there is space in fifo the ack
-// For Read, Wait for Response Path FIFO status
-assign wbm_ack_o  = (wbm_stb_i && wbm_we_i)    ?  m_cmd_wr_en : // Write Logic
-	           (wbm_stb_i && (!wbm_we_i))  ? !m_resp_rd_empty : 1'b0; // Read Logic
-
-// Last ack generation
-// During Write Phase, If Burst Length =1 then generate at first m_cmd_wr_en
-// //       If Burst Is more than 1, wait for wbm_bl_cnt=1
-// During Read Phase, Pass through the Last Ack
-assign wbm_lack_o     = (wbm_stb_i && wbm_we_i) ? ((wbm_bl_i == 'h1) ? m_cmd_wr_en : (wbm_bl_cnt == 'h2) &  m_cmd_wr_en) :
-	                ((!m_resp_rd_empty) ? m_resp_rd_data[RFW-2] : 1'b0);
-
-assign m_resp_rd_en   = !m_resp_rd_empty;
-assign wbm_dat_o      = m_resp_rd_data[DW-1:0];
-assign wbm_err_o      = (!m_resp_rd_empty) ? m_resp_rd_data[RFW-1] : 1'b0;
 
 
 //------------------------------
@@ -239,8 +282,8 @@ assign wbs_cyc_o = (wbs_burst) ? 1'b1 : ((wbs_ack_f) ? 1'b0 : (s_cmd_rd_empty) ?
 // In Read Phase 
 //      Generate burst ready, only when space in response fifo 
 //
-assign wbs_bry_o = (wbs_we_o) ? ((s_cmd_rd_empty  || (s_cmd_rd_aempty)) ? 1'b0: 1'b1) :
-	                         (s_resp_wr_afull || s_resp_wr_full ) ? 1'b0: 1'b1;
+assign wbs_bry_o = (wbs_we_o) ? ((s_cmd_rd_empty || (s_cmd_rd_en  && s_cmd_rd_aempty)) ? 1'b0: 1'b1) :
+	                         (s_resp_wr_full || (s_resp_wr_en && s_resp_wr_afull)) ? 1'b0: 1'b1;
 
 // During Write phase, cmd fifo will have wdata, so dequeue for every ack
 // During Read Phase, cmd fifo will be written only one time, hold the bus
