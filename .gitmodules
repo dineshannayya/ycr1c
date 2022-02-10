@@ -1,3 +1,0 @@
-[submodule "src/cache"]
-	path = src/cache
-	url = https://github.com/dineshannayya/cache.git
