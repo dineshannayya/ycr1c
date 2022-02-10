@@ -62,6 +62,7 @@ parameter bit [YCR1_CSR_ADDR_WIDTH-1:0] YCR1_CSR_ADDR_MVENDORID     = 'hF11;
 parameter bit [YCR1_CSR_ADDR_WIDTH-1:0] YCR1_CSR_ADDR_MARCHID       = 'hF12;
 parameter bit [YCR1_CSR_ADDR_WIDTH-1:0] YCR1_CSR_ADDR_MIMPID        = 'hF13;
 parameter bit [YCR1_CSR_ADDR_WIDTH-1:0] YCR1_CSR_ADDR_MHARTID       = 'hF14;
+parameter bit [YCR1_CSR_ADDR_WIDTH-1:0] YCR1_CSR_ADDR_NUMCORES      = 'hFC1;
 
 // Machine Trap Setup (read-write)
 parameter bit [YCR1_CSR_ADDR_WIDTH-1:0] YCR1_CSR_ADDR_MSTATUS       = 'h300;
