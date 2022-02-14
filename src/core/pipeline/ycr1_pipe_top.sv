@@ -74,6 +74,7 @@ module ycr1_pipe_top (
     output  logic                                       pipe2imem_req_o,            // IMEM request
     output  logic                                       pipe2imem_cmd_o,            // IMEM command
     output  logic [`YCR1_IMEM_AWIDTH-1:0]               pipe2imem_addr_o,           // IMEM address
+    output  logic [`YCR1_IMEM_BSIZE-1:0]                pipe2imem_bl_o,             // IMEM Burst Length
     input   logic                                       imem2pipe_req_ack_i,        // IMEM request acknowledge
     input   logic [`YCR1_IMEM_DWIDTH-1:0]               imem2pipe_rdata_i,          // IMEM read data
     input   logic [1:0]                                 imem2pipe_resp_i,           // IMEM response
@@ -344,6 +345,7 @@ ycr1_pipe_ifu i_pipe_ifu (
     .ifu2imem_req_o           (pipe2imem_req_o    ),
     .ifu2imem_cmd_o           (pipe2imem_cmd_o    ),
     .ifu2imem_addr_o          (pipe2imem_addr_o   ),
+    .ifu2imem_bl_o            (pipe2imem_bl_o     ),
     .imem2ifu_rdata_i         (imem2pipe_rdata_i  ),
     .imem2ifu_resp_i          (imem2pipe_resp_i   ),
 

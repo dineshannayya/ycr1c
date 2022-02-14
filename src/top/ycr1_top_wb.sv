@@ -56,6 +56,10 @@
 ////     1.2:   Jan 30, 2022, Dinesh A                                    ////
 ////            global register newly added in timer register to control  ////
 ////            icache/dcache operation                                   ////
+////     1.3:   Feb 14, 2022, Dinesh A                                    ////
+////            Burst Access support added to imem prefetch logic         ////
+////            Burst Prefetech support only towards imem address range   ////
+////            0x0000_0000 to 0x07FFF_FFFF                               ////
 ////                                                                      ////
 //////////////////////////////////////////////////////////////////////////////
 
@@ -249,6 +253,7 @@ logic                                               core_imem_req_ack;
 logic                                               core_imem_req;
 logic                                               core_imem_cmd;
 logic [`YCR1_IMEM_AWIDTH-1:0]                       core_imem_addr;
+logic [`YCR1_IMEM_BSIZE-1:0]                        core_imem_bl;
 logic [`YCR1_IMEM_DWIDTH-1:0]                       core_imem_rdata;
 logic [1:0]                                         core_imem_resp;
 
@@ -364,14 +369,14 @@ ycr1_intf u_intf (
     .wb_clk                             (wb_clk),             // wish bone clock
 
     // Instruction Memory Interface
-    .wbd_imem_stb_o                     (),         // strobe/request
-    .wbd_imem_adr_o                     (),         // address
-    .wbd_imem_we_o                      (),         // write
-    .wbd_imem_dat_o                     (),         // data output
-    .wbd_imem_sel_o                     (),         // byte enable
-    .wbd_imem_dat_i                     ('h0),      // data input
-    .wbd_imem_ack_i                     (1'b0),     // acknowlegement
-    .wbd_imem_err_i                     (1'b0),     // error
+    //.wbd_imem_stb_o                     (),         // strobe/request
+    //.wbd_imem_adr_o                     (),         // address
+    //.wbd_imem_we_o                      (),         // write
+    //.wbd_imem_dat_o                     (),         // data output
+    //.wbd_imem_sel_o                     (),         // byte enable
+    //.wbd_imem_dat_i                     ('h0),      // data input
+    //.wbd_imem_ack_i                     (1'b0),     // acknowlegement
+    //.wbd_imem_err_i                     (1'b0),     // error
 
     // Data Memory Interface
     .wbd_dmem_stb_o                     (wbd_dmem_stb_o),     // strobe/request
@@ -466,6 +471,7 @@ ycr1_intf u_intf (
     .core_imem_req                      (core_imem_req),      // IMEM request
     .core_imem_cmd                      (core_imem_cmd),      // IMEM command
     .core_imem_addr                     (core_imem_addr),     // IMEM address
+    .core_imem_bl                       (core_imem_bl),     // IMEM address
     .core_imem_rdata                    (core_imem_rdata),    // IMEM read data
     .core_imem_resp                     (core_imem_resp),     // IMEM response
 
@@ -534,6 +540,7 @@ ycr1_core_top i_core_top (
     .core2imem_req_o            (core_imem_req    ),
     .core2imem_cmd_o            (core_imem_cmd    ),
     .core2imem_addr_o           (core_imem_addr   ),
+    .core2imem_bl_o             (core_imem_bl     ),
     .imem2core_rdata_i          (core_imem_rdata  ),
     .imem2core_resp_i           (core_imem_resp   ),
 

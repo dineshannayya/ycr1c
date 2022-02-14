@@ -54,7 +54,7 @@ end
            $display("RISCV-DEBUG => DMEM ADDRESS: %x READ Data : %x Resonse: %x", core2dmem_addr_o_r,`RISC_CORE.dmem2core_rdata_i,`RISC_CORE.dmem2core_resp_i);
  end
 **/
-/**
+
   logic [31:0] test_count;
  `define RISC_CORE  i_top.i_core_top
  `define RISC_EXU  i_top.i_core_top.i_pipe_top.i_pipe_exu
@@ -72,7 +72,7 @@ end
              test_count <= test_count+1;
 	  end
  end
-**/
+
 `ifdef GL
 //  wire [31:0] func_return_val = {i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][31],
 //	                         i_top.i_core_top.i_pipe_top.i_pipe_mprf.mprf_int[10][30],

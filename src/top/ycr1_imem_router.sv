@@ -61,6 +61,7 @@ module ycr1_imem_router
     input   logic                           imem_req,
     input   logic                           imem_cmd,
     input   logic [`YCR1_IMEM_AWIDTH-1:0]   imem_addr,
+    input   logic [`YCR1_IMEM_BSIZE -1:0]   imem_bl,
     output  logic [`YCR1_IMEM_DWIDTH-1:0]   imem_rdata,
     output  logic [1:0]                     imem_resp,
 
@@ -69,6 +70,7 @@ module ycr1_imem_router
     output  logic                           port0_req,
     output  logic                           port0_cmd,
     output  logic [`YCR1_IMEM_AWIDTH-1:0]   port0_addr,
+    output  logic [`YCR1_IMEM_BSIZE-1:0]    port0_bl,
     input   logic [`YCR1_IMEM_DWIDTH-1:0]   port0_rdata,
     input   logic [1:0]                     port0_resp,
 
@@ -77,6 +79,7 @@ module ycr1_imem_router
     output  logic                           port1_req,
     output  logic                           port1_cmd,
     output  logic [`YCR1_IMEM_AWIDTH-1:0]   port1_addr,
+    output  logic [`YCR1_IMEM_BSIZE-1:0]    port1_bl,
     input   logic [`YCR1_IMEM_DWIDTH-1:0]   port1_rdata,
     input   logic [1:0]                     port1_resp,
 
@@ -239,9 +242,11 @@ end
 `ifdef YCR1_XPROP_EN
 assign port0_cmd   = (port_sel == YCR1_SEL_PORT0) ? imem_cmd  : YCR1_MEM_CMD_ERROR;
 assign port0_addr  = (port_sel == YCR1_SEL_PORT0) ? imem_addr : 'x;
+assign port0_bl    = (port_sel == YCR1_SEL_PORT0) ? imem_bl : 'x;
 `else // YCR1_XPROP_EN
 assign port0_cmd   = imem_cmd ;
 assign port0_addr  = imem_addr;
+assign port0_bl    = imem_bl;
 `endif // YCR1_XPROP_EN
 
 //-------------------------------------------------------------------------------
@@ -266,9 +271,11 @@ end
 `ifdef YCR1_XPROP_EN
 assign port1_cmd   = (port_sel == YCR1_SEL_PORT1) ? imem_cmd  : YCR1_MEM_CMD_ERROR;
 assign port1_addr  = (port_sel == YCR1_SEL_PORT1) ? imem_addr : 'x;
+assign port1_bl    = (port_sel == YCR1_SEL_PORT1) ? imem_bl   : 'x;
 `else // YCR1_XPROP_EN
 assign port1_cmd   = imem_cmd ;
 assign port1_addr  = imem_addr;
+assign port1_bl    = imem_bl;
 `endif // YCR1_XPROP_EN
 
 //-------------------------------------------------------------------------------

@@ -75,6 +75,7 @@ parameter    YCR1_MEM_WIDTH_ERROR    = 'x;
 parameter    YCR1_MEM_RESP_NOTRDY    = 2'b00;
 parameter    YCR1_MEM_RESP_RDY_OK    = 2'b01;
 parameter    YCR1_MEM_RESP_RDY_ER    = 2'b10;
+parameter    YCR1_MEM_RESP_RDY_LOK   = 2'b11; // LAST ACK
 //`ifdef YCR1_XPROP_EN
 //    ,
 parameter    YCR1_MEM_RESP_ERROR     = 'x;

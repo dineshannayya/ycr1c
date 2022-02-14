@@ -57,6 +57,7 @@
 `define YCR1_IMEM_DWIDTH        `YCR1_XLEN
 `define YCR1_DMEM_AWIDTH        `YCR1_XLEN
 `define YCR1_DMEM_DWIDTH        `YCR1_XLEN
+`define YCR1_IMEM_BSIZE         3          // BURST SIZE
 
 // TAP IDCODE
 `define YCR1_TAP_IDCODE         'hDEB11001

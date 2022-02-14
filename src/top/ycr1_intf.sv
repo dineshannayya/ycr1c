@@ -84,14 +84,14 @@ module ycr1_intf (
     input   logic                           wb_rst_n,       // Wish bone reset
     input   logic                           wb_clk,         // wish bone clock
     // Instruction Memory Interface
-    output  logic                           wbd_imem_stb_o, // strobe/request
-    output  logic   [YCR1_WB_WIDTH-1:0]     wbd_imem_adr_o, // address
-    output  logic                           wbd_imem_we_o,  // write
-    output  logic   [YCR1_WB_WIDTH-1:0]     wbd_imem_dat_o, // data output
-    output  logic   [3:0]                   wbd_imem_sel_o, // byte enable
-    input   logic   [YCR1_WB_WIDTH-1:0]     wbd_imem_dat_i, // data input
-    input   logic                           wbd_imem_ack_i, // acknowlegement
-    input   logic                           wbd_imem_err_i,  // error
+    //output  logic                           wbd_imem_stb_o, // strobe/request
+    //output  logic   [YCR1_WB_WIDTH-1:0]     wbd_imem_adr_o, // address
+    //output  logic                           wbd_imem_we_o,  // write
+    //output  logic   [YCR1_WB_WIDTH-1:0]     wbd_imem_dat_o, // data output
+    //output  logic   [3:0]                   wbd_imem_sel_o, // byte enable
+    //input   logic   [YCR1_WB_WIDTH-1:0]     wbd_imem_dat_i, // data input
+    //input   logic                           wbd_imem_ack_i, // acknowlegement
+    //input   logic                           wbd_imem_err_i,  // error
 
     // Data Memory Interface
     output  logic                           wbd_dmem_stb_o, // strobe/request
@@ -187,6 +187,7 @@ module ycr1_intf (
     input    logic                          core_imem_req,            // IMEM request
     input    logic                          core_imem_cmd,            // IMEM command
     input    logic [`YCR1_IMEM_AWIDTH-1:0]  core_imem_addr,           // IMEM address
+    input    logic [`YCR1_IMEM_BSIZE-1:0]   core_imem_bl,           // IMEM burst size
     output   logic [`YCR1_IMEM_DWIDTH-1:0]  core_imem_rdata,          // IMEM read data
     output   logic [1:0]                    core_imem_resp,           // IMEM response
 
@@ -215,6 +216,7 @@ logic                                               wb_imem_req_ack;
 logic                                               wb_imem_req;
 logic                                               wb_imem_cmd;
 logic [`YCR1_IMEM_AWIDTH-1:0]                       wb_imem_addr;
+logic [`YCR1_IMEM_BSIZE-1:0]                        wb_imem_bl;
 logic [`YCR1_IMEM_DWIDTH-1:0]                       wb_imem_rdata;
 logic [1:0]                                         wb_imem_resp;
 
@@ -264,6 +266,7 @@ logic                                               icache_imem_req_ack;
 logic                                               icache_imem_req;
 logic                                               icache_imem_cmd;
 logic [`YCR1_IMEM_AWIDTH-1:0]                       icache_imem_addr;
+logic [`YCR1_IMEM_BSIZE-1:0]                        icache_imem_bl;
 logic [`YCR1_IMEM_DWIDTH-1:0]                       icache_imem_rdata;
 logic [1:0]                                         icache_imem_resp;
 
@@ -282,9 +285,10 @@ logic                                               icache_req_ack;
 logic                                               icache_req;
 logic                                               icache_cmd;
 logic [1:0]                                         icache_width;
-logic [`YCR1_DMEM_AWIDTH-1:0]                       icache_addr;
-logic [`YCR1_DMEM_DWIDTH-1:0]                       icache_wdata;
-logic [`YCR1_DMEM_DWIDTH-1:0]                       icache_rdata;
+logic [`YCR1_IMEM_AWIDTH-1:0]                       icache_addr;
+logic [`YCR1_IMEM_BSIZE-1:0]                        icache_bl;
+logic [`YCR1_IMEM_DWIDTH-1:0]                       icache_wdata;
+logic [`YCR1_IMEM_DWIDTH-1:0]                       icache_rdata;
 logic [1:0]                                         icache_resp;
 
 `endif // YCR1_ICACHE_EN
@@ -553,22 +557,25 @@ ycr1_imem_router #(
     .YCR1_PORT3_ADDR_PATTERN    (32'hFFFFFFFF)
 `endif // YCR1_TCM_EN
 ) i_imem_router (
-    .rst_n          (core_rst_n_local ),
-    .clk            (core_clk         ),
+    .rst_n          (core_rst_n_local    ),
+    .clk            (core_clk            ),
     // Interface to core
-    .imem_req_ack   (core_imem_req_ack),
-    .imem_req       (core_imem_req    ),
-    .imem_cmd       (core_imem_cmd    ),
-    .imem_addr      (core_imem_addr   ),
-    .imem_rdata     (core_imem_rdata  ),
-    .imem_resp      (core_imem_resp   ),
+    .imem_req_ack   (core_imem_req_ack   ),
+    .imem_req       (core_imem_req       ),
+    .imem_cmd       (core_imem_cmd       ),
+    .imem_addr      (core_imem_addr      ),
+    .imem_bl        (core_imem_bl        ),
+    .imem_rdata     (core_imem_rdata     ),
+    .imem_resp      (core_imem_resp      ),
+
     // Interface to WB bridge
-    .port0_req_ack  (wb_imem_req_ack ),
-    .port0_req      (wb_imem_req     ),
-    .port0_cmd      (wb_imem_cmd     ),
-    .port0_addr     (wb_imem_addr    ),
-    .port0_rdata    (wb_imem_rdata   ),
-    .port0_resp     (wb_imem_resp    ),
+    .port0_req_ack  (wb_imem_req_ack     ),
+    .port0_req      (wb_imem_req         ),
+    .port0_cmd      (wb_imem_cmd         ),
+    .port0_addr     (wb_imem_addr        ),
+    .port0_bl       (wb_imem_bl          ),
+    .port0_rdata    (wb_imem_rdata       ),
+    .port0_resp     (wb_imem_resp        ),
 
  `ifdef YCR1_ICACHE_EN
     // Interface to icache
@@ -576,6 +583,7 @@ ycr1_imem_router #(
     .port1_req      (icache_imem_req     ),
     .port1_cmd      (icache_imem_cmd     ),
     .port1_addr     (icache_imem_addr    ),
+    .port1_bl       (icache_imem_bl      ),
     .port1_rdata    (icache_imem_rdata   ),
     .port1_resp     (icache_imem_resp    ),
 `else // YCR1_ICACHE_EN
@@ -583,6 +591,7 @@ ycr1_imem_router #(
     .port1_req      (                    ),
     .port1_cmd      (                    ),
     .port1_addr     (                    ),
+    .port1_bl       (                    ),
     .port1_rdata    (32'h0               ),
     .port1_resp     (YCR1_MEM_RESP_RDY_ER),
 `endif // YCR1_ICACHE_EN
@@ -624,9 +633,10 @@ ycr1_imem_router #(
 
 `else // YCR1_IMEM_ROUTER_EN
 
-assign wb_imem_req         = core_imem_req;
-assign wb_imem_cmd         = core_imem_cmd;
-assign wb_imem_addr        = core_imem_addr;
+assign wb_imem_req          = core_imem_req;
+assign wb_imem_cmd          = core_imem_cmd;
+assign wb_imem_addr         = core_imem_addr;
+assign wb_imem_bl           = core_imem_bl;
 assign core_imem_req_ack    = wb_imem_req_ack;
 assign core_imem_resp       = wb_imem_resp;
 assign core_imem_rdata      = wb_imem_rdata;
@@ -776,6 +786,7 @@ ycr1_icache_router u_icache_router(
     .imem_req        (icache_imem_req    ),
     .imem_cmd        (icache_imem_cmd    ),
     .imem_addr       (icache_imem_addr   ),
+    .imem_bl         (icache_imem_bl     ),
     .imem_width      (YCR1_MEM_WIDTH_WORD),
     .imem_rdata      (icache_imem_rdata  ),
     .imem_resp       (icache_imem_resp   ),
@@ -793,8 +804,9 @@ ycr1_icache_router u_icache_router(
     .icache_req_ack  (icache_req_ack    ),
     .icache_req      (icache_req        ),
     .icache_cmd      (icache_cmd        ),
-    .icache_width    (icache_width        ),
+    .icache_width    (icache_width      ),
     .icache_addr     (icache_addr       ),
+    .icache_bl       (icache_bl         ),
     .icache_rdata    (icache_rdata      ),
     .icache_resp     (icache_resp       )
 
@@ -802,7 +814,7 @@ ycr1_icache_router u_icache_router(
 
 
 // Icache top
-icache_top  u_icache (
+icache_top  #(.MEM_BL(`YCR1_IMEM_BSIZE) )u_icache (
 	.mclk                         (core_clk),	   //Clock input 
 	.rst_n                        (core_rst_n_local),  //Active Low Asynchronous Reset Signal Input
 
@@ -812,6 +824,7 @@ icache_top  u_icache (
 	// Wishbone CPU I/F
         .cpu_mem_req                 (icache_req),        // strobe/request
         .cpu_mem_addr                (icache_addr),       // address
+        .cpu_mem_bl                  (icache_bl),       // address
 	.cpu_mem_width               (icache_width),
 
         .cpu_mem_req_ack             (icache_req_ack),    // data input
@@ -1034,14 +1047,14 @@ ycr1_imem_wb i_imem_wb (
     // WB interface
     .wb_rst_n       (wb_rst_n          ),
     .wb_clk         (wb_clk            ),
-    .wbd_stb_o      (wbd_imem_stb_o    ), 
-    .wbd_adr_o      (wbd_imem_adr_o    ), 
-    .wbd_we_o       (wbd_imem_we_o     ),  
-    .wbd_dat_o      (wbd_imem_dat_o    ), 
-    .wbd_sel_o      (wbd_imem_sel_o    ), 
-    .wbd_dat_i      (wbd_imem_dat_i    ), 
-    .wbd_ack_i      (wbd_imem_ack_i    ), 
-    .wbd_err_i      (wbd_imem_err_i    )
+    .wbd_stb_o      (                  ), 
+    .wbd_adr_o      (                  ), 
+    .wbd_we_o       (                  ),  
+    .wbd_dat_o      (                  ), 
+    .wbd_sel_o      (                  ), 
+    .wbd_dat_i      ('h0               ), 
+    .wbd_ack_i      ('b0               ), 
+    .wbd_err_i      ('b0               )
 );
 
 

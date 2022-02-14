@@ -124,6 +124,7 @@
 module icache_top #(
 	 parameter WB_AW      = 32,
 	 parameter WB_DW      = 32,
+	 parameter MEM_BL     = 3,
 	 parameter TAG_MEM_WD = 21, // Valid + Tag
 	 parameter TAG_MEM_DP = 16,
          parameter CACHELINES = 16, // 16 Cache Line
@@ -136,8 +137,9 @@ module icache_top #(
 	input logic                        cfg_ntag_pfet_dis, // To disable next Tag refill, default = 0
 
 	//  CPU I/F
-        input logic                        cpu_mem_req, // strobe/request
+        input logic                        cpu_mem_req,  // strobe/request
         input logic   [WB_AW-1:0]          cpu_mem_addr, // address
+        input logic   [MEM_BL-1:0]         cpu_mem_bl,   // Burst Size
         input logic   [1:0]                cpu_mem_width, // address
 
 	output logic                       cpu_mem_req_ack, // Ack for Strob request accepted
@@ -234,6 +236,7 @@ logic	                          cache_next_hit           ;
 
 logic [WB_AW-1:0]                cpu_addr_l                ;
 logic [1:0]                      cpu_width_l               ;
+logic [MEM_BL-1:0]               cpu_bl_l               ;
 logic [WB_AW-1:0]                cache_refill_addr         ;
 
 logic   [WB_DW-1:0]               prefetch_data            ; // Additional Prefetch on next location of current location
@@ -331,6 +334,7 @@ begin
 
       cpu_addr_l        <= '0;
       cpu_width_l       <= '0;
+      cpu_bl_l          <= '0;
 
       prefetch_data     <= '0;
       prefetch_ptr      <= '0;
@@ -357,13 +361,25 @@ begin
 	     (cpu_mem_addr[31:2] == {cpu_addr_l[31:7], prefetch_ptr[4:0]})) begin
 	     // Ack with Prefect data
               cpu_mem_rdata    <= ycr1_conv_wb2mem_rdata(cpu_mem_width,cpu_mem_addr[1:0], prefetch_data);
-	      cpu_mem_resp     <= 2'b01;
+	      if(cpu_mem_bl == 'h1)
+	          cpu_mem_resp     <= 2'b11; // Last Access
+	      else
+	          cpu_mem_resp     <= 2'b01;
 
 	      // Goahead for next data prefetech in same cache index
 	      cache_mem_addr1  <= {prefetch_index,next_prefetch_ptr[4:0]}; // Address for additional prefetch;
-	      cache_mem_csb1   <= 1'b0;
-	      prefetch_ptr     <= next_prefetch_ptr;
-	      state            <= PREFETCH_WAIT;
+	      prefetch_ptr     <= next_prefetch_ptr+1;
+	      cpu_width_l      <= cpu_mem_width;
+              cpu_bl_l         <= cpu_mem_bl-1;
+              cpu_addr_l[31:2] <= cpu_mem_addr[31:2]+1;
+              cpu_addr_l[1:0]  <= 2'b0; // Next data will be 32 bit aligned access
+	      if(&cpu_mem_addr[6:2] && cpu_mem_bl > 'h1) begin //cache line change over
+	          cache_mem_csb1   <= 1'b1;
+	          state            <= TAG_COMPARE;
+	      end else begin
+	          cache_mem_csb1   <= 1'b0;
+	          state            <= PREFETCH_WAIT;
+	      end
 
          end else begin
 	    cpu_mem_resp      <= 2'b00;
@@ -373,6 +389,7 @@ begin
 	    if(cpu_mem_req && (cpu_mem_resp == 2'b00)) begin
 	        cpu_addr_l       <= cpu_mem_addr;
 		cpu_width_l      <= cpu_mem_width;
+		cpu_bl_l         <= cpu_mem_bl;
 		prefetch_val     <= 1'b0;
 	        state            <= TAG_COMPARE;
 	    end else if(!cfg_ntag_pfet_dis && !cache_next_hit && !cache_busy) begin 
@@ -387,7 +404,15 @@ begin
 	 end
       end
 
+      //----------------------------------------------------
+      // Check for cache line hit or not
+      // If there is hit, the pick data from local RAM
+      // else go ahead of cache refill request followed by 
+      // data fill from RAM
+      //----------------------------------------------------
+
       TAG_COMPARE	:begin
+	 cpu_mem_resp     <= 2'b00; // Disable Ack
          case(cache_hit)
 	 1'd0:begin // If there is no Tag Hit
 	      if(cache_busy == 0) begin
@@ -397,25 +422,49 @@ begin
 	     end
          end
 
-	 1'd1:	begin
+	 1'd1:	begin // If Tag Hit
 	      cache_mem_addr1  <= {tag_hindex,cpu_addr_l[6:2]};
 	      prefetch_index   <= tag_hindex;
-	      prefetch_ptr     <=  cpu_addr_l[6:2]+1;
-	      cache_mem_csb1    <= 1'b0;
-	      state             <= CACHE_RDATA_FETCH1; // Read Cache
+	      prefetch_ptr     <= cpu_addr_l[6:2]+1;
+	      cache_mem_csb1   <= 1'b0;
+	      state            <= CACHE_RDATA_FETCH1; // Read Cache
 	  end
 	  endcase
        end
+       //--------------------------------------------------------------------------
+       // When there is tag hit, we need to fetch the data from RAM, Since There is two
+       // cycle access delay in RAM, we need have additional pipe line stage to
+       // support burst read access and also to hold additional one pre-fetech
+       // data
+       // ------------------------------------------------------------------------
        CACHE_RDATA_FETCH1: begin
+	  prefetch_ptr     <=  prefetch_ptr+1;
 	  cache_mem_addr1  <= {prefetch_index,prefetch_ptr}; // Address for additional prefetch;
 	  state            <= CACHE_RDATA_FETCH2;
        end
 
        CACHE_RDATA_FETCH2: begin
-	  cache_mem_csb1   <= 1'b1;
           cpu_mem_rdata     <= ycr1_conv_wb2mem_rdata(cpu_width_l,cpu_addr_l[1:0], cache_mem_dout1); 
-	  cpu_mem_resp     <= 2'b01;
-	  state            <= CACHE_RDATA_FETCH3;
+	  if(cpu_bl_l == 'h1) begin // Check if it's last access of burst
+	      cache_mem_csb1   <= 1'b1;
+	      cpu_mem_resp     <= 2'b11; // Last Ack
+	      prefetch_ptr     <=  cpu_addr_l[6:2]+1; // reset the prefetch pointer
+	      state            <= CACHE_RDATA_FETCH3;
+	  end else begin // If it's not last burst access
+	      cpu_mem_resp     <= 2'b01; // Single Ack
+              cpu_bl_l         <= cpu_bl_l-1;
+              cpu_addr_l[31:2] <= cpu_addr_l[31:2]+1;
+              cpu_addr_l[1:0]  <= 2'b0; // Next data will be 32 bit aligned access
+	      // check if it cache line cross over boundary
+	      // If yes, go for fresh cache line tag compare state
+	      if(&cpu_addr_l[6:2]) begin 
+	          cache_mem_csb1   <= 1'b1;
+	          state            <= TAG_COMPARE;
+	      end else begin // If next data is with the same cache line
+	          prefetch_ptr     <=  prefetch_ptr+1;
+	          cache_mem_addr1  <= {prefetch_index,prefetch_ptr}; // Address for additional prefetch;
+	      end
+	  end
        end
        // Do Additial prefetech for next location
        CACHE_RDATA_FETCH3: begin
@@ -425,14 +474,24 @@ begin
 	  state            <= IDLE;
        end
 
-       // Additional Prefetch delay do to RAM access is take effectly two
-       // cycle
+       // Additional Prefetch delay do to take care of RAM Two cycle access
        PREFETCH_WAIT: begin
 	  cpu_mem_resp     <= 2'b00;
-	  cache_mem_csb1   <= 1'b1;
-	  state            <= CACHE_RDATA_FETCH3;
+	  // If current command is single burst
+	  if(cpu_bl_l == 'h0) begin
+	     cache_mem_csb1   <= 1'b1;
+	     state            <= CACHE_RDATA_FETCH3;
+	  end else begin // Current command is multi burst
+	      cache_mem_csb1   <= 1'b0;
+	      prefetch_ptr     <=  prefetch_ptr+1;
+	      cache_mem_addr1  <= {prefetch_index,prefetch_ptr}; // Address for additional prefetch;
+	      state            <= CACHE_RDATA_FETCH2;
+	  end
       end
 
+      //-----------------------------------------------------------
+      // Wait for Single Cache Line fill from Exteranl Memory
+      // ----------------------------------------------------------
       CACHE_REFILL_WAIT: begin
 	  if(cache_busy == 1) begin
 	     cache_refill_req <= 0;
@@ -441,14 +500,15 @@ begin
       end
 
      CACHE_REFILL_DONE: begin
-	  // Copy the snoop details from cache fsm
-	  cpu_mem_resp     <= (wb_cpu_ack1_o) ? 2'b01: 2'b00;
-	  cpu_mem_rdata     <= ycr1_conv_wb2mem_rdata(cpu_width_l,cpu_addr_l[1:0], wb_cpu_dat1_o);  
 	  if(cache_busy == 0) begin
-	     state       <= IDLE;
+	     state       <= TAG_COMPARE;
 	  end
       end
 
+      //---------------------------------------------------------
+      // Cache Prefill : This is run only one time in power up
+      // and does complete cache line fill in one go
+      // --------------------------------------------------------
       CACHE_PREFILL_WAIT: begin
 	  if(cache_busy == 1) begin
 	     cache_prefill_req <= 0;
@@ -491,6 +551,10 @@ begin
 end
 
 
+//------------------------------------------------------------------------
+// This FSM handles the Cache pre fill from the Wishbone interface
+// -----------------------------------------------------------------------
+
 icache_app_fsm  #(
 	 .WB_AW      (WB_AW     ) ,
 	 .WB_DW      (WB_DW     ) ,
@@ -500,11 +564,11 @@ icache_app_fsm  #(
          .CACHESIZE  (CACHESIZE )  // Each cacheline has  32 Word
 
         ) u_app_fsm (
-	.mclk                         (mclk                ),	  //Clock input 
-	.rst_n                        (rst_n               ),	  //Active Low Asynchronous Reset Signal Input
+	.mclk                         (mclk                ), //Clock input 
+	.rst_n                        (rst_n               ), //Active Low Asynchronous Reset Signal Input
 
 	// Wishbone CPU I/F
-        .cpu_addr                     (cache_refill_addr   ),     // address
+        .cpu_addr                     (cache_refill_addr   ), // address
                                                    
         .wb_cpu_dat_o                 (wb_cpu_dat1_o       ), // data input
         .wb_cpu_ack_o                 (wb_cpu_ack1_o       ), // acknowlegement

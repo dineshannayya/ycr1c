@@ -52,6 +52,7 @@ module ycr1_icache_router (
     input   logic                           imem_cmd,
     input   logic [1:0]                     imem_width,
     input   logic [`YCR1_IMEM_AWIDTH-1:0]   imem_addr,
+    input   logic [`YCR1_IMEM_BSIZE-1:0]    imem_bl,
     output  logic [`YCR1_IMEM_DWIDTH-1:0]   imem_rdata,
     output  logic [1:0]                     imem_resp,
 
@@ -71,13 +72,14 @@ module ycr1_icache_router (
     output  logic                           icache_cmd,
     output  logic [1:0]                     icache_width,
     output  logic [`YCR1_IMEM_AWIDTH-1:0]   icache_addr,
+    output  logic [`YCR1_IMEM_BSIZE-1:0]    icache_bl,
     input   logic [`YCR1_IMEM_DWIDTH-1:0]   icache_rdata,
     input   logic [1:0]                     icache_resp
 
 );
 
 
-wire icache_ack = (icache_resp == YCR1_MEM_RESP_RDY_OK);
+wire icache_ack = (icache_resp == YCR1_MEM_RESP_RDY_LOK);
 
 // Arbitor to select between external wb vs uart wb
 wire [1:0] grnt;
@@ -95,14 +97,18 @@ assign icache_req   = (grnt == 2'b00) ? imem_req    : (grnt == 2'b01) ? dmem_req
 assign icache_cmd   = (grnt == 2'b00) ? imem_cmd    : (grnt == 2'b01) ? dmem_cmd   : '0; 
 assign icache_width = (grnt == 2'b00) ? imem_width  : (grnt == 2'b01) ? dmem_width : '0; 
 assign icache_addr  = (grnt == 2'b00) ? imem_addr   : (grnt == 2'b01) ? dmem_addr  : '0; 
+assign icache_bl    = (grnt == 2'b00) ? imem_bl     : (grnt == 2'b01) ? 'h1        : '0; 
 
 assign imem_req_ack    = (grnt == 2'b00) ? icache_req_ack : 'h0;
 assign imem_rdata      = (grnt == 2'b00) ? icache_rdata   : 'h0;
-assign imem_resp       = (grnt == 2'b00) ? icache_resp    : 'h0;
+// Manipulate the propgation of last ack,
+// As Risc core support only ACK, So we are passing only ack towards core
+// we are using last ack to help in grant switching
+assign imem_resp       = (grnt == 2'b00) ? ((icache_resp == YCR1_MEM_RESP_RDY_LOK) ?  YCR1_MEM_RESP_RDY_OK : icache_resp)  : 'h0;
 
 assign dmem_req_ack    = (grnt == 2'b01) ? icache_req_ack : 'h0;
 assign dmem_rdata      = (grnt == 2'b01) ? icache_rdata   : 'h0;
-assign dmem_resp       = (grnt == 2'b01) ? icache_resp    : 'h0;
+assign dmem_resp       = (grnt == 2'b01) ? ((icache_resp == YCR1_MEM_RESP_RDY_LOK) ?  YCR1_MEM_RESP_RDY_OK : icache_resp)    : 'h0;
 
 
 endmodule : ycr1_icache_router
