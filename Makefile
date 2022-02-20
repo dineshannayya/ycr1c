@@ -181,23 +181,23 @@ ifeq (,$(findstring e,$(ARCH_lowercase)))
 # These tests cannot be compiled for RVE
 
     # Comment this target if you don't want to run the riscv_isa
-    #TARGETS += riscv_isa
+    TARGETS += riscv_isa
 
     # Comment this target if you don't want to run the riscv_compliance
     TARGETS += riscv_compliance
 endif
 
 # Comment this target if you don't want to run the isr_sample
-#TARGETS += isr_sample
+TARGETS += isr_sample
 
 # Comment this target if you don't want to run the coremark
-#TARGETS += coremark
+TARGETS += coremark
 
 # Comment this target if you don't want to run the dhrystone
-#TARGETS += dhrystone21
+TARGETS += dhrystone21
 
 # Comment this target if you don't want to run the hello test
-#TARGETS += hello
+TARGETS += hello
 
 
 # Targets

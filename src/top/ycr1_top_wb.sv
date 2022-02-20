@@ -60,6 +60,8 @@
 ////            Burst Access support added to imem prefetch logic         ////
 ////            Burst Prefetech support only towards imem address range   ////
 ////            0x0000_0000 to 0x07FFF_FFFF                               ////
+////     1.4:   Feb 20, 2022, Dinesh A                                    ////
+////            Total RISC CORE variable added in address at 0xFC1        //// 
 ////                                                                      ////
 //////////////////////////////////////////////////////////////////////////////
 
