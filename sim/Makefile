@@ -38,6 +38,9 @@ ifeq ($(BUS),WB)
 export ycr1_tb_top  := $(root_dir)/tb/ycr1_top_tb_wb.sv
 endif
 
+### To Enable IVERILOG FST DUMP
+export IVERILOG_DUMPER = fst
+
 .PHONY: build_iverilog build_modelsim build_modelsim_wlf build_vcs build_ncsim build_verilator build_verilator_wf build_iverilog_wf
 
 default: build_modelsim
