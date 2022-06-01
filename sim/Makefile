@@ -11,31 +11,31 @@ cache_inc_dir ?= $(root_dir)/src/cache/src/core
 rtl_dir ?= $(root_dir)/src/
 synth_dir ?= $(root_dir)/synth/
 rtl_inc_tb_dir ?= $(root_dir)/tb/
-top_module ?= ycr1_top_tb_ahb
+top_module ?= ycr_top_tb_ahb
 
 
 ifeq ($(MAKECMDGOALS), $(filter $(MAKECMDGOALS),build_verilator build_verilator_wf))
 ifeq ($(BUS),AHB)
-export ycr1_wrapper  := $(root_dir)/sim/verilator_wrap/ycr1_ahb_wrapper.c
+export ycr_wrapper  := $(root_dir)/sim/verilator_wrap/ycr_ahb_wrapper.c
 endif
 ifeq ($(BUS),AXI)
-export ycr1_wrapper  := $(root_dir)/sim/verilator_wrap/ycr1_axi_wrapper.c
+export ycr_wrapper  := $(root_dir)/sim/verilator_wrap/ycr_axi_wrapper.c
 endif
 ifeq ($(BUS),WB)
-export ycr1_wrapper  := $(root_dir)/sim/verilator_wrap/ycr1_wb_wrapper.c
+export ycr_wrapper  := $(root_dir)/sim/verilator_wrap/ycr_wb_wrapper.c
 endif
 export verilator_ver ?= $(shell  expr `verilator --version | cut -f2 -d' '`)
 endif
 
 #Get to toplevel TB file
 ifeq ($(BUS),AHB)
-export ycr1_tb_top  := $(root_dir)/tb/ycr1_top_tb_ahb.sv
+export ycr_tb_top  := $(root_dir)/tb/ycr_top_tb_ahb.sv
 endif
 ifeq ($(BUS),AXI)
-export ycr1_tb_top  := $(root_dir)/tb/ycr1_top_tb_axi.sv
+export ycr_tb_top  := $(root_dir)/tb/ycr_top_tb_axi.sv
 endif
 ifeq ($(BUS),WB)
-export ycr1_tb_top  := $(root_dir)/tb/ycr1_top_tb_wb.sv
+export ycr_tb_top  := $(root_dir)/tb/ycr_top_tb_wb.sv
 endif
 
 ### To Enable IVERILOG FST DUMP
@@ -58,7 +58,7 @@ build_iverilog:
 	-I $(rtl_inc_tb_dir) \
 	-D $(SIM_CFG_DEF) \
 	$(SIM_BUILD_OPTS) \
-	$(ycr1_tb_top) \
+	$(ycr_tb_top) \
 	-o $(top_module).vvp
 
 build_iverilog_wf: 
@@ -76,7 +76,7 @@ build_iverilog_wf:
 	-D $(SIM_CFG_DEF) \
 	-D $(SIM) \
 	$(SIM_BUILD_OPTS) \
-	$(ycr1_tb_top) \
+	$(ycr_tb_top) \
 	-o $(top_module).vvp
 
 build_modelsim: 
@@ -91,13 +91,13 @@ build_modelsim:
 	+incdir+$(cache_inc_dir) \
 	+incdir+$(rtl_inc_tb_dir) \
 	+nowarnSVCHK  \
-	+define+YCR1_TRGT_SIMULATION \
+	+define+YCR_TRGT_SIMULATION \
 	+define+FUNCTIONAL \
 	+define+$(SIM) \
 	+define+$(SIM_TRACE_DEF) \
 	+define+$(SIM_CFG_DEF) \
 	$(SIM_BUILD_OPTS) \
-	$(ycr1_tb_top)
+	$(ycr_tb_top)
 
 build_modelsim_wlf: 
 	cd $(bld_dir); \
@@ -112,13 +112,13 @@ build_modelsim_wlf:
 	+incdir+$(rtl_inc_tb_dir) \
 	+nowarnSVCHK  \
 	+define+FUNCTIONAL \
-	+define+YCR1_TRGT_SIMULATION \
+	+define+YCR_TRGT_SIMULATION \
 	+define+$(SIM) \
 	+define+$(SIM_TRACE_DEF) \
 	+define+$(SIM_CFG_DEF) \
 	+define+WFDUMP \
 	$(SIM_BUILD_OPTS) \
-	$(ycr1_tb_top)
+	$(ycr_tb_top)
 build_vcs: 
 	cd $(bld_dir); \
 	vcs \
@@ -135,14 +135,14 @@ build_vcs:
 	+incdir+$(cache_inc_dir) \
 	+incdir+$(rtl_inc_tb_dir) \
 	+define+FUNCTIONAL \
-	+define+YCR1_TRGT_SIMULATION \
+	+define+YCR_TRGT_SIMULATION \
 	+define+$(SIM) \
 	+define+$(SIM_TRACE_DEF) \
 	+define+$(SIM_CFG_DEF) \
 	-nc \
 	-debug_all \
 	$(SIM_BUILD_OPTS) \
-	$(ycr1_tb_top)
+	$(ycr_tb_top)
 
 build_ncsim: 
 	cd $(bld_dir); \
@@ -160,12 +160,12 @@ build_ncsim:
 	-incdir $(rtl_inc_tb_dir) \
 	-debug \
 	+define+FUNCTIONAL \
-	+define+YCR1_TRGT_SIMULATION \
+	+define+YCR_TRGT_SIMULATION \
 	+define+$(SIM_TRACE_DEF) \
 	+define+$(SIM_CFG_DEF) \
 	+define+$(SIM) \
 	$(SIM_BUILD_OPTS) \
-	$(ycr1_tb_top) \
+	$(ycr_tb_top) \
 	-top $(top_module)
 
 build_verilator: 
@@ -176,13 +176,13 @@ build_verilator:
 	+1800-2017ext+sv \
 	-Wno-fatal \
 	--top-module $(top_module) \
-	-DYCR1_TRGT_SIMULATION \
+	-DYCR_TRGT_SIMULATION \
 	-D$(SIM_TRACE_DEF) \
 	-D$(SIM_CFG_DEF) \
 	+define+FUNCTIONAL \
 	+define+$(SIM) \
 	--clk clk \
-	--exe $(ycr1_wrapper) \
+	--exe $(ycr_wrapper) \
 	--Mdir $(bld_dir)/verilator \
 	-I$(PDK_PATH) \
 	-I$(rtl_dir) \
@@ -191,7 +191,7 @@ build_verilator:
 	-I$(cache_inc_dir) \
 	-I$(rtl_inc_tb_dir) \
 	$(SIM_BUILD_OPTS) \
-	$(ycr1_tb_top); \
+	$(ycr_tb_top); \
 	cd verilator; \
 	$(MAKE) -f V$(top_module).mk;
 
@@ -204,14 +204,14 @@ build_verilator_wf:
 	-Wno-fatal \
 	--top-module $(top_module) \
 	-DFUNCTIONAL \
-	-DYCR1_TRGT_SIMULATION \
+	-DYCR_TRGT_SIMULATION \
 	-D$(SIM_TRACE_DEF) \
 	-D$(SIM_CFG_DEF) \
 	+define+$(SIM) \
 	-CFLAGS -DVCD_TRACE -CFLAGS -DTRACE_LVLV=20 \
 	-CFLAGS -DVCD_FNAME=simx.vcd \
 	--clk clk \
-	--exe $(ycr1_wrapper) \
+	--exe $(ycr_wrapper) \
 	--trace \
 	--trace-params \
     --trace-structs \
@@ -224,7 +224,7 @@ build_verilator_wf:
 	-I$(cache_inc_dir) \
 	-I$(rtl_inc_tb_dir) \
 	$(SIM_BUILD_OPTS) \
-	$(ycr1_tb_top); \
+	$(ycr_tb_top); \
 	cd verilator; \
 	$(MAKE) -f V$(top_module).mk;
 
